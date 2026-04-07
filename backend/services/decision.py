@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.outbox import emit_event
 from backend.models.forecasting import (
     DecisionLedger,
     DecisionReason,
@@ -187,6 +188,19 @@ async def evaluate_forecast(
             message=r.get("message"),
         )
         db.add(reason)
+
+    # Emit outbox event within the same transaction
+    await emit_event(
+        db,
+        event_type="created",
+        aggregate_type="decision",
+        aggregate_id=str(decision.decision_id),
+        payload={
+            "action": action,
+            "score": str(score),
+            "forecast_id": str(forecast_id),
+        },
+    )
 
     await db.commit()
     await db.refresh(decision)

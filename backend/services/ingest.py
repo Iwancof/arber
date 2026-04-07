@@ -11,6 +11,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.outbox import emit_event
 from backend.models.content import DedupCluster, RawDocument
 
 
@@ -98,6 +99,20 @@ async def ingest_document(
     # Update cluster representative
     if cluster.representative_doc_id is None:
         cluster.representative_doc_id = doc.raw_document_id
+
+    # Emit outbox event within the same transaction
+    await emit_event(
+        db,
+        event_type="created",
+        aggregate_type="raw_document",
+        aggregate_id=str(doc.raw_document_id),
+        payload={
+            "source_id": str(source_id),
+            "headline": headline,
+            "content_hash": content_hash,
+            "published_at": published_at.isoformat(),
+        },
+    )
 
     await db.commit()
     await db.refresh(doc)

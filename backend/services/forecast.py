@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.adapters.worker.base import WorkerAdapter, WorkerTask
+from backend.core.outbox import emit_event
 from backend.models.content import EventLedger
 from backend.models.core import Instrument
 from backend.models.forecasting import (
@@ -157,6 +158,19 @@ async def run_forecast_pipeline(
             ret_q90=_to_decimal(h_data.get("ret_q90")),
         )
         db.add(horizon)
+
+    # Emit outbox event within the same transaction
+    await emit_event(
+        db,
+        event_type="created",
+        aggregate_type="forecast",
+        aggregate_id=str(forecast.forecast_id),
+        payload={
+            "instrument_id": str(instrument_id),
+            "event_id": str(event_id),
+            "confidence": str(confidence),
+        },
+    )
 
     await db.commit()
     await db.refresh(forecast)

@@ -15,6 +15,12 @@ from backend.adapters.broker.base import (
     BrokerAdapter,
     OrderIntent,
 )
+from backend.adapters.broker.registry import validate_adapter_for_mode
+from backend.core.execution_mode import (
+    ExecutionMode,
+    validate_mode_for_order_submission,
+)
+from backend.core.outbox import emit_event
 from backend.models.core import Instrument
 from backend.models.execution import (
     ExecutionFill,
@@ -51,9 +57,17 @@ async def submit_order(
 ) -> OrderLedger:
     """Submit an order based on a decision.
 
-    Checks kill switch, loads decision and instrument,
-    submits to broker, records in order ledger.
+    Checks execution mode safety guards, kill switch,
+    loads decision and instrument, submits to broker,
+    records in order ledger.
     """
+    # Layer 1: Service-level mode guard
+    mode = ExecutionMode(execution_mode)
+    validate_mode_for_order_submission(mode)
+
+    # Layer 2: Adapter-level mode guard
+    validate_adapter_for_mode(broker, mode)
+
     # Check global kill switch
     global_ks = await check_kill_switch(db)
     if global_ks:
@@ -149,6 +163,19 @@ async def submit_order(
 
     # Update decision status
     decision.decision_status = "submitted_to_execution"
+
+    # Emit outbox event within the same transaction
+    await emit_event(
+        db,
+        event_type="submitted",
+        aggregate_type="order",
+        aggregate_id=str(order.order_id),
+        payload={
+            "decision_id": str(decision_id),
+            "side": side,
+            "qty": str(qty),
+        },
+    )
 
     await db.commit()
     await db.refresh(order)

@@ -16,6 +16,7 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.outbox import emit_event
 from backend.models.forecasting import (
     DecisionLedger,
     PromptResponse,
@@ -123,6 +124,18 @@ async def create_prompt_task(
                 task.prompt_task_id
             ),
         )
+    )
+
+    # Emit outbox event within the same transaction
+    await emit_event(
+        db,
+        event_type="created",
+        aggregate_type="prompt_task",
+        aggregate_id=str(task.prompt_task_id),
+        payload={
+            "decision_id": str(decision_id),
+            "task_type": task_type,
+        },
     )
 
     await db.commit()

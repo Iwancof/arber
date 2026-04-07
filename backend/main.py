@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from backend.api.v1.router import api_v1_router
 from backend.config.settings import settings
+from backend.core.middleware import TraceMiddleware
 
 
 @asynccontextmanager
@@ -21,4 +22,5 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(TraceMiddleware)
 app.include_router(api_v1_router)
