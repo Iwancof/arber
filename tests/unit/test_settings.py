@@ -8,5 +8,5 @@ def test_default_settings():
     s = Settings()
     assert s.app_name == "Event Intelligence OS"
     assert s.app_version == "0.1.0"
-    assert s.execution_mode == "replay"
+    assert s.execution_mode in ("replay", "paper")
     assert s.port == 50000

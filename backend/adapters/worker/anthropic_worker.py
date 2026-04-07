@@ -28,6 +28,7 @@ def _get_model_for_task(task_type: str) -> str:
     overrides = {
         "event_extract": settings.anthropic_model_event_extract,
         "single_name_forecast": settings.anthropic_model_forecast,
+        "noise_classifier": settings.anthropic_model_noise,
     }
     override = overrides.get(task_type, "")
     return override or settings.anthropic_default_model
