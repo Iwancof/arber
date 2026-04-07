@@ -14,6 +14,7 @@ def get_worker_adapter() -> WorkerAdapter:
     Configured via EOS_LLM_PROVIDER env var:
     - "anthropic" (default) → Claude API
     - "openai" → OpenAI GPT API
+    - "codex" → Codex CLI (codex exec)
     - "mock" → MockWorkerAdapter (testing)
     """
     provider = settings.llm_provider.lower()
@@ -23,6 +24,12 @@ def get_worker_adapter() -> WorkerAdapter:
             OpenAIWorkerAdapter,
         )
         return OpenAIWorkerAdapter()
+
+    if provider == "codex":
+        from backend.adapters.worker.codex_worker import (
+            CodexWorkerAdapter,
+        )
+        return CodexWorkerAdapter()
 
     if provider == "mock":
         from backend.adapters.worker.mock_worker import (
