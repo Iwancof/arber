@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info:
+  title: Event OS Operations Chat API Addendum
+  version: 0.1.0
+paths:
+  /v1/ops-chat/sessions:
+    post:
+      summary: Create chat session
+      responses:
+        '201':
+          description: Created
+    get:
+      summary: List chat sessions
+      responses:
+        '200':
+          description: OK
+  /v1/ops-chat/sessions/{session_id}/messages:
+    post:
+      summary: Append user message and trigger intent parsing
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '202':
+          description: Accepted
+  /v1/ops-chat/sessions/{session_id}/timeline:
+    get:
+      summary: Get session timeline with messages, intents, proposals, executions
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: OK
+  /v1/ops-chat/context/global:
+    get:
+      summary: Get current global status capsule
+      responses:
+        '200':
+          description: OK
+  /v1/ops-chat/context/symbols/{symbol}:
+    get:
+      summary: Get symbol dossier capsule
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: OK
+  /v1/ops-chat/proposals:
+    get:
+      summary: List pending proposals
+      responses:
+        '200':
+          description: OK
+  /v1/ops-chat/proposals/{proposal_id}/confirm:
+    post:
+      summary: Confirm proposal
+      parameters:
+        - name: proposal_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Confirmed
+  /v1/ops-chat/proposals/{proposal_id}/reject:
+    post:
+      summary: Reject proposal
+      parameters:
+        - name: proposal_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Rejected
+  /v1/ops-chat/notes:
+    post:
+      summary: Create chat-promoted memory note
+      responses:
+        '201':
+          description: Created
+  /v1/ops-chat/mode/{session_id}:
+    post:
+      summary: Change chat session mode
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Mode changed
