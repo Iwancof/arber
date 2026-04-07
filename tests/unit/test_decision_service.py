@@ -1,130 +1,261 @@
-"""Tests for the decision policy service."""
+"""Tests for the v2 decision policy service."""
 
 from decimal import Decimal
 
 from backend.services.decision import (
-    compute_decision_score,
+    compute_directional_edge,
+    compute_priority,
+    compute_size_cap,
     determine_action,
+    determine_confidence_band,
     determine_initial_status,
+    determine_trade_horizon,
 )
-
-
-class FakeForecast:
-    """Minimal forecast-like object for testing."""
-
-    def __init__(self, confidence: Decimal | None = None):
-        self.confidence = confidence
 
 
 class FakeHorizon:
     """Minimal horizon-like object for testing."""
 
-    def __init__(self, horizon_code: str, p_outperform: Decimal | None = None):
-        self.horizon_code = horizon_code
-        self.p_outperform_benchmark = p_outperform
+    def __init__(
+        self, code: str, p_out: Decimal | None = None
+    ):
+        self.horizon_code = code
+        self.p_outperform_benchmark = p_out
 
 
-def test_compute_score_no_horizons():
-    """Score should be 0 with no horizons."""
-    forecast = FakeForecast(confidence=Decimal("0.7"))
-    score, reasons = compute_decision_score(forecast, [])
-    assert score == Decimal("0")
+# ── Directional Edge ─────────────────────────
+
+
+def test_edge_no_horizons():
+    """No horizons → zero edge."""
+    edge, _, _, reasons = compute_directional_edge([])
+    assert edge == Decimal("0")
     assert any(r["code"] == "no_horizons" for r in reasons)
 
 
-def test_compute_score_bullish():
-    """High confidence + high p_outperform should give positive score."""
-    forecast = FakeForecast(confidence=Decimal("0.8"))
-    horizons = [
-        FakeHorizon("1d", Decimal("0.75")),
-        FakeHorizon("5d", Decimal("0.70")),
+def test_edge_bullish():
+    """High p_outperform → positive edge."""
+    hs = [
+        FakeHorizon("1d", Decimal("0.68")),
+        FakeHorizon("5d", Decimal("0.63")),
     ]
-    score, reasons = compute_decision_score(forecast, horizons)
-    assert score > Decimal("0")
-    assert len(reasons) >= 2
+    edge, e1d, e5d, _ = compute_directional_edge(hs)
+    assert edge > Decimal("0")
+    assert e1d == Decimal("0.36")
+    assert e5d == Decimal("0.26")
 
 
-def test_compute_score_bearish():
-    """Low confidence + low p_outperform should give negative score."""
-    forecast = FakeForecast(confidence=Decimal("0.2"))
-    horizons = [
-        FakeHorizon("1d", Decimal("0.25")),
+def test_edge_bearish():
+    """Low p_outperform → negative edge."""
+    hs = [
+        FakeHorizon("1d", Decimal("0.35")),
+        FakeHorizon("5d", Decimal("0.38")),
     ]
-    score, reasons = compute_decision_score(forecast, horizons)
-    assert score < Decimal("0")
+    edge, _, _, _ = compute_directional_edge(hs)
+    assert edge < Decimal("0")
 
 
-def test_compute_score_neutral():
-    """50/50 should give near-zero score."""
-    forecast = FakeForecast(confidence=Decimal("0.5"))
-    horizons = [
-        FakeHorizon("1d", Decimal("0.5")),
+def test_edge_neutral():
+    """p_outperform ~0.5 → near-zero edge."""
+    hs = [
+        FakeHorizon("1d", Decimal("0.51")),
+        FakeHorizon("5d", Decimal("0.50")),
     ]
-    score, reasons = compute_decision_score(forecast, horizons)
-    assert abs(score) < Decimal("0.1")
+    edge, _, _, _ = compute_directional_edge(hs)
+    assert abs(edge) < Decimal("0.05")
 
 
-def test_score_clamped_to_range():
-    """Score should be clamped to [-1, 1]."""
-    forecast = FakeForecast(confidence=Decimal("1.0"))
-    horizons = [
-        FakeHorizon("1d", Decimal("1.0")),
-        FakeHorizon("5d", Decimal("1.0")),
-        FakeHorizon("20d", Decimal("1.0")),
-    ]
-    score, _ = compute_decision_score(forecast, horizons)
-    assert Decimal("-1") <= score <= Decimal("1")
+# ── Confidence Band ──────────────────────────
 
 
-def test_determine_action_long():
-    """High score + high confidence should be long_candidate."""
-    action = determine_action(Decimal("0.7"), Decimal("0.8"), "replay")
-    assert action == "long_candidate"
+def test_band_noise():
+    assert determine_confidence_band(Decimal("0.51")) == "noise"
 
 
-def test_determine_action_no_trade():
-    """Low score + low confidence should be no_trade."""
-    action = determine_action(Decimal("0.1"), Decimal("0.3"), "replay")
+def test_band_weak():
+    assert determine_confidence_band(Decimal("0.58")) == "weak"
+
+
+def test_band_clear():
+    assert determine_confidence_band(Decimal("0.67")) == "clear"
+
+
+def test_band_strong():
+    assert determine_confidence_band(Decimal("0.75")) == "strong"
+
+
+def test_band_very_strong():
+    assert determine_confidence_band(Decimal("0.85")) == "very_strong"
+
+
+# ── Action Matrix ────────────────────────────
+
+
+def test_action_noise_always_no_trade():
+    action = determine_action(Decimal("0.51"), Decimal("0.5"))
     assert action == "no_trade"
 
 
-def test_determine_action_wait_manual():
-    """Moderate score + low confidence should be wait_manual."""
-    action = determine_action(Decimal("0.5"), Decimal("0.35"), "replay")
-    assert action == "wait_manual"
+def test_action_clear_high_edge_long():
+    """Clear signal + strong edge → long."""
+    action = determine_action(
+        Decimal("0.67"), Decimal("0.35")
+    )
+    assert action == "long_candidate"
 
 
-def test_determine_action_short():
-    """Very negative score + high confidence should be short_candidate."""
-    action = determine_action(Decimal("-0.7"), Decimal("0.8"), "replay")
+def test_action_clear_high_edge_short():
+    """Clear signal + negative edge → short."""
+    action = determine_action(
+        Decimal("0.67"), Decimal("-0.35")
+    )
     assert action == "short_candidate"
 
 
-def test_initial_status_replay_auto_approved():
-    """Replay mode should auto-approve trade actions."""
-    status = determine_initial_status("long_candidate", "replay")
-    assert status == "approved"
+def test_action_clear_moderate_edge_manual():
+    """Clear signal + moderate edge → manual."""
+    action = determine_action(
+        Decimal("0.67"), Decimal("0.25")
+    )
+    assert action == "wait_manual"
 
 
-def test_initial_status_shadow_auto_approved():
-    """Shadow mode should auto-approve trade actions."""
-    status = determine_initial_status("short_candidate", "shadow")
-    assert status == "approved"
+def test_action_clear_low_edge_no_trade():
+    """Clear signal + low edge → no trade."""
+    action = determine_action(
+        Decimal("0.67"), Decimal("0.10")
+    )
+    assert action == "no_trade"
 
 
-def test_initial_status_live_candidate():
-    """Live mode should leave as candidate."""
-    status = determine_initial_status("long_candidate", "live")
-    assert status == "candidate"
+def test_action_strong_long():
+    """Strong + edge>=0.25 → long."""
+    action = determine_action(
+        Decimal("0.75"), Decimal("0.30")
+    )
+    assert action == "long_candidate"
 
 
-def test_initial_status_wait_manual():
-    """Wait manual action should set waiting_manual status."""
-    status = determine_initial_status("wait_manual", "replay")
-    assert status == "waiting_manual"
+def test_action_very_strong_long():
+    """Very strong + edge>=0.20 → long."""
+    action = determine_action(
+        Decimal("0.85"), Decimal("0.22")
+    )
+    assert action == "long_candidate"
 
 
-def test_initial_status_no_trade():
-    """No trade action should set suppressed status."""
-    status = determine_initial_status("no_trade", "live")
-    assert status == "suppressed"
+def test_action_weak_high_edge_manual():
+    """Weak + very high edge → manual."""
+    action = determine_action(
+        Decimal("0.58"), Decimal("0.40")
+    )
+    assert action == "wait_manual"
+
+
+# ── Size Cap ─────────────────────────────────
+
+
+def test_size_cap_tier1():
+    cap = compute_size_cap(
+        Decimal("0.67"), Decimal("0.35"), "long_candidate"
+    )
+    assert cap == Decimal("2000.00")
+
+
+def test_size_cap_tier2():
+    cap = compute_size_cap(
+        Decimal("0.75"), Decimal("0.30"), "long_candidate"
+    )
+    assert cap == Decimal("3500.0")
+
+
+def test_size_cap_tier3():
+    cap = compute_size_cap(
+        Decimal("0.85"), Decimal("0.25"), "long_candidate"
+    )
+    assert cap == Decimal("5000.00")
+
+
+def test_size_cap_manual():
+    cap = compute_size_cap(
+        Decimal("0.60"), Decimal("0.20"), "wait_manual"
+    )
+    assert cap == Decimal("1500.0")
+
+
+def test_size_cap_no_trade():
+    cap = compute_size_cap(
+        Decimal("0.51"), Decimal("0.05"), "no_trade"
+    )
+    assert cap is None
+
+
+# ── Trade Horizon ────────────────────────────
+
+
+def test_horizon_earnings_5d():
+    h = determine_trade_horizon(
+        "corp_earnings_beat",
+        Decimal("0.3"), Decimal("0.2"),
+    )
+    assert h == "5d"
+
+
+def test_horizon_analyst_1d():
+    h = determine_trade_horizon(
+        "market_analyst_upgrade_material",
+        Decimal("0.3"), Decimal("0.2"),
+    )
+    assert h == "1d"
+
+
+def test_horizon_edge_dominant_1d():
+    """1d edge much larger → 1d."""
+    h = determine_trade_horizon(
+        "unknown",
+        Decimal("0.4"), Decimal("0.2"),
+    )
+    assert h == "1d"
+
+
+def test_horizon_default_5d():
+    h = determine_trade_horizon(
+        "unknown",
+        Decimal("0.3"), Decimal("0.25"),
+    )
+    assert h == "5d"
+
+
+# ── Priority ─────────────────────────────────
+
+
+def test_priority():
+    p = compute_priority(Decimal("0.70"), Decimal("0.30"))
+    assert p == Decimal("0.30") * Decimal("0.20")
+
+
+# ── Status ───────────────────────────────────
+
+
+def test_status_replay_approved():
+    assert determine_initial_status(
+        "long_candidate", "replay"
+    ) == "approved"
+
+
+def test_status_paper_candidate():
+    assert determine_initial_status(
+        "long_candidate", "paper"
+    ) == "candidate"
+
+
+def test_status_manual():
+    assert determine_initial_status(
+        "wait_manual", "paper"
+    ) == "waiting_manual"
+
+
+def test_status_no_trade():
+    assert determine_initial_status(
+        "no_trade", "paper"
+    ) == "suppressed"
