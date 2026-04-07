@@ -64,8 +64,20 @@ async def get_decision_dossier(
         DecisionReasonRead.model_validate(r)
         for r in reasons_result.scalars().all()
     ]
-    decision_read = DecisionLedgerRead.model_validate(decision)
-    decision_read.reasons = reasons
+    decision_read = DecisionLedgerRead(
+        decision_id=decision.decision_id,
+        forecast_id=decision.forecast_id,
+        market_profile_id=decision.market_profile_id,
+        execution_mode=decision.execution_mode,
+        score=decision.score,
+        action=decision.action,
+        decision_status=decision.decision_status,
+        policy_version=decision.policy_version,
+        size_cap=decision.size_cap,
+        reason_codes_json=decision.reason_codes_json,
+        decided_at=decision.decided_at,
+        reasons=reasons,
+    )
 
     # Forecast
     forecast_read = None
@@ -87,8 +99,25 @@ async def get_decision_dossier(
                 ForecastHorizonRead.model_validate(h)
                 for h in h_result.scalars().all()
             ]
-            forecast_read = ForecastLedgerRead.model_validate(forecast)
-            forecast_read.horizons = horizons
+            forecast_read = ForecastLedgerRead(
+                forecast_id=forecast.forecast_id,
+                event_id=forecast.event_id,
+                instrument_id=forecast.instrument_id,
+                benchmark_instrument_id=forecast.benchmark_instrument_id,
+                market_profile_id=forecast.market_profile_id,
+                reasoning_trace_id=forecast.reasoning_trace_id,
+                model_family=forecast.model_family,
+                model_version=forecast.model_version,
+                worker_id=forecast.worker_id,
+                prompt_template_id=forecast.prompt_template_id,
+                prompt_version=forecast.prompt_version,
+                forecast_mode=forecast.forecast_mode,
+                forecasted_at=forecast.forecasted_at,
+                confidence=forecast.confidence,
+                no_trade_reason_codes_json=forecast.no_trade_reason_codes_json,
+                forecast_json=forecast.forecast_json,
+                horizons=horizons,
+            )
 
     # Event
     event_dict = None

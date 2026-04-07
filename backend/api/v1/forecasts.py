@@ -25,6 +25,71 @@ from backend.schemas.forecasting import (
 router = APIRouter(tags=["forecasts"])
 
 
+async def _build_forecast_read(
+    db: AsyncSession, f: ForecastLedger
+) -> ForecastLedgerRead:
+    """Build ForecastLedgerRead avoiding lazy load."""
+    h_result = await db.execute(
+        select(ForecastHorizon).where(
+            ForecastHorizon.forecast_id == f.forecast_id
+        )
+    )
+    horizons = [
+        ForecastHorizonRead.model_validate(h)
+        for h in h_result.scalars().all()
+    ]
+    # Build without touching ORM relationships
+    fr = ForecastLedgerRead(
+        forecast_id=f.forecast_id,
+        event_id=f.event_id,
+        instrument_id=f.instrument_id,
+        benchmark_instrument_id=f.benchmark_instrument_id,
+        market_profile_id=f.market_profile_id,
+        reasoning_trace_id=f.reasoning_trace_id,
+        model_family=f.model_family,
+        model_version=f.model_version,
+        worker_id=f.worker_id,
+        prompt_template_id=f.prompt_template_id,
+        prompt_version=f.prompt_version,
+        forecast_mode=f.forecast_mode,
+        forecasted_at=f.forecasted_at,
+        confidence=f.confidence,
+        no_trade_reason_codes_json=f.no_trade_reason_codes_json,
+        forecast_json=f.forecast_json,
+        horizons=horizons,
+    )
+    return fr
+
+
+async def _build_decision_read(
+    db: AsyncSession, d: DecisionLedger
+) -> DecisionLedgerRead:
+    """Build DecisionLedgerRead avoiding lazy load."""
+    r_result = await db.execute(
+        select(DecisionReason).where(
+            DecisionReason.decision_id == d.decision_id
+        )
+    )
+    reasons = [
+        DecisionReasonRead.model_validate(r)
+        for r in r_result.scalars().all()
+    ]
+    return DecisionLedgerRead(
+        decision_id=d.decision_id,
+        forecast_id=d.forecast_id,
+        market_profile_id=d.market_profile_id,
+        execution_mode=d.execution_mode,
+        score=d.score,
+        action=d.action,
+        decision_status=d.decision_status,
+        policy_version=d.policy_version,
+        size_cap=d.size_cap,
+        reason_codes_json=d.reason_codes_json,
+        decided_at=d.decided_at,
+        reasons=reasons,
+    )
+
+
 @router.get("/forecasts", response_model=ForecastList)
 async def list_forecasts(
     instrument_id: UUID | None = Query(default=None),
@@ -56,36 +121,32 @@ async def list_forecasts(
 
     items = []
     for f in forecasts:
-        h_result = await db.execute(
-            select(ForecastHorizon).where(ForecastHorizon.forecast_id == f.forecast_id)
-        )
-        horizons = [ForecastHorizonRead.model_validate(h) for h in h_result.scalars().all()]
-        fr = ForecastLedgerRead.model_validate(f)
-        fr.horizons = horizons
-        items.append(fr)
+        items.append(await _build_forecast_read(db, f))
 
-    return ForecastList(items=items, total=total, limit=limit, offset=offset)
+    return ForecastList(
+        items=items, total=total, limit=limit, offset=offset
+    )
 
 
-@router.get("/forecasts/{forecast_id}", response_model=ForecastLedgerRead)
+@router.get(
+    "/forecasts/{forecast_id}",
+    response_model=ForecastLedgerRead,
+)
 async def get_forecast(
     forecast_id: UUID,
     db: AsyncSession = Depends(get_db),
 ) -> ForecastLedgerRead:
     result = await db.execute(
-        select(ForecastLedger).where(ForecastLedger.forecast_id == forecast_id)
+        select(ForecastLedger).where(
+            ForecastLedger.forecast_id == forecast_id
+        )
     )
     forecast = result.scalar_one_or_none()
     if forecast is None:
-        raise HTTPException(status_code=404, detail="Forecast not found")
-
-    h_result = await db.execute(
-        select(ForecastHorizon).where(ForecastHorizon.forecast_id == forecast_id)
-    )
-    horizons = [ForecastHorizonRead.model_validate(h) for h in h_result.scalars().all()]
-    fr = ForecastLedgerRead.model_validate(forecast)
-    fr.horizons = horizons
-    return fr
+        raise HTTPException(
+            status_code=404, detail="Forecast not found"
+        )
+    return await _build_forecast_read(db, forecast)
 
 
 @router.get("/decisions", response_model=DecisionList)
@@ -127,16 +188,6 @@ async def list_decisions(
 
     items = []
     for d in decisions:
-        r_result = await db.execute(
-            select(DecisionReason).where(
-                DecisionReason.decision_id == d.decision_id
-            )
-        )
-        reasons = [
-            DecisionReasonRead.model_validate(r) for r in r_result.scalars().all()
-        ]
-        dr = DecisionLedgerRead.model_validate(d)
-        dr.reasons = reasons
-        items.append(dr)
+        items.append(await _build_decision_read(db, d))
 
     return DecisionList(items=items, total=total, limit=limit, offset=offset)
