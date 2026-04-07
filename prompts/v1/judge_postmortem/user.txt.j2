@@ -1,0 +1,17 @@
+Evaluate this forecast against the realized outcome.
+
+Symbol: {{ symbol }}
+Original forecast: {{ forecast_json }}
+Realized return (relative): {{ realized_rel_return }}
+Horizon: {{ horizon_code }}
+
+Respond with JSON:
+{
+  "verdict": "correct|wrong|mixed|insufficient",
+  "direction_correct": true,
+  "magnitude_assessment": "underestimated|accurate|overestimated",
+  "failure_codes": [],
+  "lessons_learned": ["what to improve"],
+  "source_quality_note": "was the evidence sufficient",
+  "prompt_quality_note": "was the question well-framed"
+}

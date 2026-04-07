@@ -17,6 +17,7 @@ from backend.adapters.worker.base import (
     WorkerTask,
 )
 from backend.config.settings import settings
+from backend.prompts.templates import get_template
 
 
 def _get_model_for_task(task_type: str) -> str:
@@ -120,139 +121,34 @@ class AnthropicWorkerAdapter(WorkerAdapter):
 
 
 def _build_system_message(task: WorkerTask) -> str:
-    """Build system message based on task type."""
-    base = (
-        "You are an expert financial analyst for "
-        "Event Intelligence OS. "
-        "Always respond with valid JSON only. "
-        "No markdown, no explanation outside JSON."
+    """Build system message from template file."""
+    tmpl = get_template(task.task_type)
+    if tmpl:
+        return tmpl.system_text
+    return (
+        "You are an expert financial analyst. "
+        "Respond with valid JSON only."
     )
-
-    if task.task_type == "event_extract":
-        return (
-            f"{base}\n"
-            "Extract structured events from the "
-            "document. "
-            "Output must match the event_record schema."
-        )
-    if task.task_type == "single_name_forecast":
-        return (
-            f"{base}\n"
-            "Generate a forecast for the given "
-            "instrument based on the event.\n"
-            "You MUST use EXACTLY the JSON schema "
-            "shown in the user message.\n"
-            "Every field listed is REQUIRED.\n"
-            "Do NOT invent your own field names.\n"
-            "Do NOT add fields not in the schema.\n"
-            "Focus on relative performance vs "
-            "benchmark, never point price."
-        )
-    return base
 
 
 def _build_prompt(task: WorkerTask) -> str:
-    """Build the user prompt from task input."""
+    """Build user prompt from template file."""
     payload = task.input_payload
+    tmpl = get_template(task.task_type)
 
-    if task.task_type == "event_extract":
-        headline = payload.get("headline", "")
-        text = payload.get("raw_text", "")
-        return (
-            "Extract structured events from this "
-            "document.\n\n"
-            f"Headline: {headline}\n"
-            f"Content: {text}\n\n"
-            "Respond with JSON:\n"
-            "{\n"
-            '  "schema_name": "event_record",\n'
-            '  "schema_version": "1.0.0",\n'
-            '  "events": [\n'
-            "    {\n"
-            '      "event_type": "<type>",\n'
-            '      "affected_assets": ["<symbol>"],\n'
-            '      "direction_hint": '
-            '"positive|negative|neutral|mixed",\n'
-            '      "materiality": <0.0-1.0>,\n'
-            '      "novelty": <0.0-1.0>,\n'
-            '      "evidence_spans": [\n'
-            '        {"text": "<quote>", '
-            '"start": <int>, "end": <int>}\n'
-            "      ]\n"
-            "    }\n"
-            "  ]\n"
-            "}"
-        )
+    if tmpl:
+        # Prepare variables for Jinja2
+        variables = dict(payload)
+        # Ensure event_json is a string for templates
+        if "event_json" in variables and not isinstance(
+            variables["event_json"], str
+        ):
+            variables["event_json"] = json.dumps(
+                variables["event_json"], default=str
+            )
+        return tmpl.render_user(**variables)
 
-    if task.task_type == "single_name_forecast":
-        symbol = payload.get("instrument_symbol", "")
-        event_type = payload.get("event_type", "")
-        event_json = payload.get("event_json", {})
-        direction = payload.get(
-            "direction_hint", "unknown"
-        )
-        ej = json.dumps(event_json, default=str)
-        return (
-            f"Forecast for {symbol} based on this "
-            f"event.\n\n"
-            f"Event type: {event_type}\n"
-            f"Direction hint: {direction}\n"
-            f"Event data: {ej}\n\n"
-            "Respond with EXACTLY this JSON structure "
-            "(fill in real values):\n\n"
-            "```json\n"
-            "{\n"
-            '  "hypotheses": [\n'
-            "    {\n"
-            '      "code": "hypothesis_name",\n'
-            '      "weight": 0.6,\n'
-            '      "description": "why this matters"\n'
-            "    }\n"
-            "  ],\n"
-            '  "selected_hypothesis": '
-            '"hypothesis_name",\n'
-            '  "rejected_hypotheses": '
-            '["other_hypothesis"],\n'
-            '  "counterarguments": [\n'
-            "    {\n"
-            '      "code": "risk_name",\n'
-            '      "severity": "medium"\n'
-            "    }\n"
-            "  ],\n"
-            '  "risk_flags": [],\n'
-            '  "evidence_refs": [],\n'
-            '  "confidence_before": 0.5,\n'
-            '  "confidence_after": 0.65,\n'
-            '  "direction_hint": "positive",\n'
-            '  "horizons": {\n'
-            '    "1d": {\n'
-            '      "p_outperform": 0.58,\n'
-            '      "p_underperform": 0.42,\n'
-            '      "ret_q10": -0.015,\n'
-            '      "ret_q50": 0.005,\n'
-            '      "ret_q90": 0.025\n'
-            "    },\n"
-            '    "5d": {\n'
-            '      "p_outperform": 0.55,\n'
-            '      "p_underperform": 0.45,\n'
-            '      "ret_q10": -0.03,\n'
-            '      "ret_q50": 0.008,\n'
-            '      "ret_q90": 0.04\n'
-            "    }\n"
-            "  }\n"
-            "}\n"
-            "```\n\n"
-            "RULES:\n"
-            "- Use ONLY these exact field names\n"
-            "- hypotheses: at least 2\n"
-            "- horizons: must include 1d and 5d\n"
-            "- All numbers must be actual values\n"
-            "- p_outperform + p_underperform = 1.0\n"
-            "- confidence_after between 0 and 1\n"
-            "- Return raw JSON only, no markdown"
-        )
-
-    # Generic fallback
+    # Fallback for unknown task types
     return json.dumps(payload, default=str)
 
 

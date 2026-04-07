@@ -1,0 +1,20 @@
+Review this forecast critically.
+
+Symbol: {{ symbol }}
+Forecast: {{ forecast_json }}
+
+Respond with JSON:
+{
+  "overall_assessment": "agree|disagree|partially_agree",
+  "confidence_adjustment": 0.0,
+  "counterarguments": [
+    {
+      "code": "risk_name",
+      "severity": "low|medium|high|critical",
+      "description": "what could go wrong"
+    }
+  ],
+  "missing_evidence": ["what information is lacking"],
+  "alternative_hypothesis": "what else could explain the event",
+  "recommendation": "proceed|reduce_size|wait|reject"
+}

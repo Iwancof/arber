@@ -1,0 +1,32 @@
+Extract structured events from this document.
+
+Headline: {{ headline }}
+Content: {{ raw_text }}
+
+Respond with EXACTLY this JSON structure (fill in real values):
+
+{
+  "schema_name": "event_record",
+  "schema_version": "1.0.0",
+  "events": [
+    {
+      "event_type": "earnings_beat",
+      "affected_assets": ["AAPL"],
+      "direction_hint": "positive",
+      "materiality": 0.8,
+      "novelty": 0.7,
+      "evidence_spans": [
+        {"text": "quoted text from the document", "start": 0, "end": 50}
+      ]
+    }
+  ]
+}
+
+RULES:
+- event_type: use descriptive snake_case (earnings_beat, guidance_cut, macro_release, etc.)
+- affected_assets: ticker symbols mentioned or implied
+- direction_hint: one of positive, negative, neutral, mixed
+- materiality: 0.0 (irrelevant) to 1.0 (market-moving)
+- novelty: 0.0 (routine) to 1.0 (unprecedented)
+- evidence_spans: quote the exact text that supports the extraction
+- Return raw JSON only, no markdown

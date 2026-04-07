@@ -1,0 +1,57 @@
+Forecast for {{ symbol }} based on this event.
+
+Event type: {{ event_type }}
+Direction hint: {{ direction_hint }}
+Event data: {{ event_json }}
+
+Respond with EXACTLY this JSON structure (fill in real values):
+
+```json
+{
+  "hypotheses": [
+    {
+      "code": "hypothesis_name",
+      "weight": 0.6,
+      "description": "why this matters"
+    }
+  ],
+  "selected_hypothesis": "hypothesis_name",
+  "rejected_hypotheses": ["other_hypothesis"],
+  "counterarguments": [
+    {
+      "code": "risk_name",
+      "severity": "medium"
+    }
+  ],
+  "risk_flags": [],
+  "evidence_refs": [],
+  "confidence_before": 0.5,
+  "confidence_after": 0.65,
+  "direction_hint": "positive",
+  "horizons": {
+    "1d": {
+      "p_outperform": 0.58,
+      "p_underperform": 0.42,
+      "ret_q10": -0.015,
+      "ret_q50": 0.005,
+      "ret_q90": 0.025
+    },
+    "5d": {
+      "p_outperform": 0.55,
+      "p_underperform": 0.45,
+      "ret_q10": -0.03,
+      "ret_q50": 0.008,
+      "ret_q90": 0.04
+    }
+  }
+}
+```
+
+RULES:
+- Use ONLY these exact field names
+- hypotheses: at least 2
+- horizons: must include 1d and 5d
+- All numbers must be actual values
+- p_outperform + p_underperform = 1.0
+- confidence_after between 0 and 1
+- Return raw JSON only, no markdown
