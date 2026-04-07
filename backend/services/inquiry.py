@@ -11,11 +11,13 @@ Task:  draft -> visible -> claimed -> awaiting_response
        | expired | superseded | canceled
 """
 
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +29,15 @@ from backend.models.inquiry import (
     InquiryResolution,
     InquiryResponse,
     InquiryTask,
+)
+
+logger = logging.getLogger("eos.inquiry")
+
+INQUIRY_DISCORD_WEBHOOK = (
+    "https://discord.com/api/webhooks/"
+    "1491079099362443364/"
+    "LDDoAL5xZYccMkH5nxQTuVK-cadpUC5JwX1RRVJUSX-"
+    "tRUzYXdb58QJVVUH6SUQ3R-Vn"
 )
 
 # ---------------------------------------------------------------
@@ -264,7 +275,46 @@ async def spawn_inquiry_task(
     )
     await db.commit()
     await db.refresh(task)
+
+    # Notify Discord
+    await _notify_inquiry_discord(
+        question_title, question_text, sla_class,
+    )
+
     return task
+
+
+async def _notify_inquiry_discord(
+    title: str,
+    text: str,
+    sla_class: str,
+) -> None:
+    """Send inquiry question to Discord webhook."""
+    try:
+        icon = {
+            "urgent": "🔴",
+            "fast": "🟠",
+            "normal": "🟡",
+            "slow": "🟢",
+        }.get(sla_class, "❓")
+
+        msg = (
+            f"{icon} **Inquiry: {title}**\n"
+            f"{text[:500]}\n"
+            f"SLA: {sla_class} | "
+            f"回答: http://localhost:50000/v1/ui/inquiry"
+        )
+        async with httpx.AsyncClient() as c:
+            await c.post(
+                INQUIRY_DISCORD_WEBHOOK,
+                json={"content": msg},
+                timeout=5,
+            )
+    except Exception:
+        logger.warning(
+            "Discord inquiry notification failed",
+            exc_info=True,
+        )
 
 
 async def claim_task(
