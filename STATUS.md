@@ -1,60 +1,85 @@
 # Event Intelligence OS — Status
 
-## v1 Safety Hardening Complete
+## System State: Production (Paper Mode)
 
 **Last Updated**: 2026-04-07
 
-## Phase Progress
+## Running Services
 
-| Phase | Status |
-|-------|--------|
-| Phase 0-5: Feature Implementation | **Complete** |
-| Fix 1: ORM/SQL Alignment | **Complete** |
-| Fix 2: Execution Mode 3-Layer Guard | **Complete** |
-| Fix 3: Transactional Outbox | **Complete** |
-| Fix 4: trace_id Propagation | **Complete** |
-| Fix 5: JWT Auth + RBAC | **Complete** |
-| Fix 6: Scoped Kill Switches | **Complete** |
-| Fix 7: Safety Tests | **Complete** |
+| Service | systemd Unit | Port | Status |
+|---------|-------------|------|--------|
+| PostgreSQL + Redis + Grafana | `event-os-infra` | 50002/6379/50001 | Running |
+| FastAPI API | `event-os-api` | 50000 | Running |
+| Pipeline Worker | `event-os-pipeline` | - | Running (5min interval) |
 
-## Final Metrics
+## Pipeline
 
-| カテゴリ | 数量 |
-|---------|------|
-| DB テーブル | 54 (7 schemas) |
-| SQLAlchemy ORM モデル | 54 |
-| API ルート | 59 |
-| テスト | 158 |
-| サービス | 7 |
-| アダプター | 4 (Worker/Broker x ABC/Mock) |
-| コミット | 10 |
+自動実行中: Alpaca News → Claude Opus 4.6 (event_extract + single_name_forecast) → Policy Engine → Decision
 
-## v1 Safety Architecture
+- **LLM**: Claude Opus 4.6 (`claude-opus-4-6`)
+- **News Source**: Alpaca News (Benzinga)
+- **Interval**: 5分
+- **Symbols**: AAPL, MSFT, GOOGL, AMZN, NVDA, META, TSLA, JPM, V, UNH
+- **Market**: US_EQUITY
 
-### Execution Mode (Fail-Closed, 3層)
-- **Layer 1**: ExecutionMode enum rejects replay/shadow at service level
-- **Layer 2**: Broker adapter registry enforces mode→adapter mapping
-- **Layer 3**: Live requires arming with TTL + credentials
+## Architecture
 
-### Authentication (JWT + RBAC)
-- Roles: viewer < operator < trader < admin
-- Capabilities: can_live_trade, can_arm_live, can_kill_switch, can_manage_sources
-- Kill switch endpoints: require CAN_KILL_SWITCH
-- Extension management: require ADMIN role
+| Category | Count |
+|----------|-------|
+| DB Tables | 71 (8 schemas) |
+| API Routes | 88 |
+| Unit Tests | 158 |
+| Grafana Dashboards | 7 |
+| Services | 7 + ops_chat |
+| Adapters | 4 (Worker/Broker × ABC/Mock) + Alpaca + SEC |
 
-### Transactional Outbox
-- All critical state transitions emit outbox row in same transaction
-- Events: raw_document.created, forecast.created, decision.created, order.submitted, prompt_task.created
-- Carries trace_id, correlation_id, idempotency_key
+## Key URLs
 
-### Trace Propagation
-- TraceContext with trace_id + correlation_id + causation_id
-- TraceMiddleware on every HTTP request
-- All outbox events carry trace automatically
+- **API**: http://localhost:50000
+- **API Docs**: http://localhost:50000/docs
+- **Inquiry UI**: http://localhost:50000/v1/ui/inquiry
+- **Grafana**: http://localhost:50001 (admin/admin)
 
-### Kill Switch (5 Scopes)
-- TRADE_HALT_GLOBAL: Block new orders
-- REDUCE_ONLY_GLOBAL: Block buys, allow sells
-- DECISION_HALT: Force no_trade decisions
-- SOURCE_INGEST_PAUSE: Per-source ingest block
-- FULL_FREEZE: Halt decisions + orders
+## DB Schemas
+
+| Schema | Purpose | Tables |
+|--------|---------|--------|
+| core | Markets, instruments, users, extensions | 17 |
+| sources | Source registry, watch plans | 9 |
+| content | Documents, events | 6 |
+| forecasting | Forecasts, decisions, prompts | 10 |
+| execution | Orders, fills, positions | 3 |
+| feedback | Outcomes, postmortems, reliability | 4 |
+| ops | Audit, kill switch, config, outbox | 6 |
+| human_ops | Inquiry cases, tasks, responses | 8 |
+| ops_chat | Chat sessions, capsules, proposals | 9 |
+
+## Safety Architecture
+
+- **Execution Mode**: 3-layer fail-closed (service → adapter registry → live arming)
+- **Auth**: JWT + RBAC (viewer/operator/trader/admin), disabled in dev
+- **Kill Switch**: 5 scopes (trade_halt, reduce_only, decision_halt, source_pause, full_freeze)
+- **Outbox**: Transactional outbox on all critical paths
+- **Trace**: trace_id propagation via middleware
+
+## Completed Implementation Phases
+
+1. Phase 0: Skeleton (DB, API, Grafana)
+2. Phase 1: Ingest (ORM 54 tables, source/market/event API)
+3. Phase 2: Forecast (Worker adapter, forecast/decision pipeline)
+4. Phase 3: Manual Bridge + Replay (prompt lifecycle, replay engine, postmortem)
+5. Phase 4: Paper+Live (broker adapter, order lifecycle, kill switch)
+6. Phase 5: Extensibility (plugin/schema/flag/contract registries)
+7. Safety Hardening (ORM alignment, mode guards, outbox, trace, auth, kill switch scope)
+8. Real Pipeline (Anthropic worker, Alpaca adapters, background worker)
+9. Human Inquiry Orchestration (case/task lifecycle, 8 tables, 16 API endpoints)
+10. Ops Chat Copilot (context capsules, intent/proposal, 9 tables, 11 API endpoints)
+11. Visualization (7 Grafana dashboards, Inquiry answer web UI)
+12. Claude Code Skills (/ops-chat, /ops-apply)
+
+## Pending / Known Issues
+
+- Prompt refinement: waiting for design team response
+- SEC EDGAR adapter: built but not connected to pipeline
+- Integration tests: unit tests only, no full E2E test suite
+- Alembic migrations: using docker-entrypoint SQL, no versioned migrations
