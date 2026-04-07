@@ -60,6 +60,8 @@ _TASK_TRANSITIONS: dict[str, list[str]] = {
     ],
     "submitted": [
         "parsed",
+        "accepted",
+        "rejected",
         "expired",
         "superseded",
     ],

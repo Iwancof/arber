@@ -29,6 +29,7 @@ from backend.models.inquiry import (
 )
 from backend.schemas.inquiry import (
     InquiryAcceptRequest,
+    InquiryCaseCreate,
     InquiryCaseList,
     InquiryCaseRead,
     InquiryMetricsRead,
@@ -180,6 +181,43 @@ async def list_cases(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.post(
+    "/cases",
+    response_model=InquiryCaseRead,
+    status_code=201,
+    summary="Create inquiry case",
+)
+async def create_case(
+    body: InquiryCaseCreate,
+    db: AsyncSession = Depends(get_db),
+) -> InquiryCaseRead:
+    """Create a new inquiry case."""
+    from backend.services.inquiry import (
+        create_inquiry_case,
+    )
+    case = await create_inquiry_case(
+        db, **body.model_dump()
+    )
+    return InquiryCaseRead(
+        inquiry_case_id=case.inquiry_case_id,
+        market_profile_code=case.market_profile_code,
+        linked_entity_type=case.linked_entity_type,
+        linked_entity_id=case.linked_entity_id,
+        inquiry_kind=case.inquiry_kind,
+        dedupe_key=case.dedupe_key,
+        title=case.title,
+        benchmark_symbol=case.benchmark_symbol,
+        primary_symbol=case.primary_symbol,
+        horizon_code=case.horizon_code,
+        priority_score=case.priority_score,
+        urgency_class=case.urgency_class,
+        case_status=case.case_status,
+        opened_at=case.opened_at,
+        updated_at=case.updated_at,
+        metadata_json=case.metadata_json,
     )
 
 
