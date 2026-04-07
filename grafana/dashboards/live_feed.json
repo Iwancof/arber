@@ -1,0 +1,1075 @@
+{
+  "uid": "eos-live-feed",
+  "title": "Live Feed - News → Prediction → Decision",
+  "description": "Visual storytelling dashboard: news → events → forecasts → decisions pipeline in real time.",
+  "tags": ["event-intelligence-os", "live-feed", "pipeline", "visual"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 2,
+  "editable": true,
+  "style": "dark",
+  "links": [
+    {
+      "title": "Overview Dashboard",
+      "url": "/d/eos-overview",
+      "icon": "dashboard",
+      "type": "link",
+      "targetBlank": false
+    }
+  ],
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["10s", "30s", "1m", "5m"],
+    "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d"]
+  },
+  "panels": [
+    {
+      "id": 100,
+      "type": "row",
+      "title": "📡 Live Activity Timeline",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Event & Decision Timeline",
+      "description": "Materiality as bars, direction signal as line. Tracks event flow over time.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 1 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  el.created_at as time,\n  el.materiality as \"Materiality\",\n  CASE el.direction_hint\n    WHEN 'positive' THEN 0.8\n    WHEN 'negative' THEN -0.8\n    WHEN 'neutral' THEN 0\n    ELSE 0.2\n  END as \"Direction Signal\"\nFROM content.event_ledger el\nORDER BY el.created_at",
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": true,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Materiality" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "bars" },
+              { "id": "custom.fillOpacity", "value": 60 },
+              { "id": "custom.gradientMode", "value": "scheme" },
+              { "id": "color", "value": { "mode": "continuous-blues" } },
+              { "id": "custom.lineWidth", "value": 0 },
+              { "id": "custom.barAlignment", "value": 0 },
+              { "id": "custom.axisSoftMin", "value": 0 },
+              { "id": "custom.axisSoftMax", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Direction Signal" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "line" },
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.fillOpacity", "value": 15 },
+              { "id": "custom.gradientMode", "value": "scheme" },
+              { "id": "color", "value": { "mode": "continuous-GrYlRd" } },
+              { "id": "custom.lineInterpolation", "value": "smooth" },
+              { "id": "custom.pointSize", "value": 8 },
+              { "id": "custom.showPoints", "value": "always" },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showValues": "last",
+          "calcs": ["lastNotNull", "mean"]
+        }
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 200,
+      "type": "row",
+      "title": "🎯 Latest Predictions",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "gauge",
+      "title": "Confidence Gauge",
+      "description": "Average forecast confidence in the last 6 hours.",
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 10 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  avg((f.forecast_json->>'confidence_after')::numeric) as \"Avg Confidence\"\nFROM forecasting.forecast_ledger f\nWHERE f.forecasted_at > now() - interval '6 hours'",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0.4,
+          "max": 1.0,
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#F2495C", "value": 0.5 },
+              { "color": "#FF9830", "value": 0.58 },
+              { "color": "#73BF69", "value": 0.65 }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": { "text": "No data", "color": "text" }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true,
+        "sizing": "auto",
+        "minVizWidth": 75,
+        "minVizHeight": 75
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 3,
+      "type": "bargauge",
+      "title": "Outperform Probability",
+      "description": "1-day P(Outperform Benchmark) by symbol, last 6 hours.",
+      "gridPos": { "h": 7, "w": 9, "x": 6, "y": 10 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  i.symbol,\n  fh.p_outperform_benchmark as \"P(Outperform)\"\nFROM forecasting.forecast_horizon fh\nJOIN forecasting.forecast_ledger f ON f.forecast_id = fh.forecast_id\nLEFT JOIN core.instrument i ON i.instrument_id = f.instrument_id\nWHERE fh.horizon_code = '1d'\n  AND f.forecasted_at > now() - interval '6 hours'\nORDER BY fh.p_outperform_benchmark DESC",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0,
+          "max": 1,
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#F2495C", "value": null },
+              { "color": "#F2495C", "value": 0.45 },
+              { "color": "#FADE2A", "value": 0.52 },
+              { "color": "#73BF69", "value": 0.58 }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "values": true,
+          "calcs": [],
+          "fields": "/P\\(Outperform\\)/"
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "valueMode": "color",
+        "showUnfilled": true,
+        "sizing": "auto",
+        "minVizWidth": 8,
+        "minVizHeight": 16,
+        "namePlacement": "auto",
+        "text": {}
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "symbol": "Symbol"
+            },
+            "indexByName": {
+              "symbol": 0,
+              "P(Outperform)": 1
+            }
+          }
+        }
+      ],
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Decision Score Distribution",
+      "description": "Decision scores by symbol, colored by action. Last 6 hours.",
+      "gridPos": { "h": 7, "w": 9, "x": 15, "y": 10 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  i.symbol,\n  d.score as \"Score\",\n  d.action\nFROM forecasting.decision_ledger d\nJOIN forecasting.forecast_ledger f ON f.forecast_id = d.forecast_id\nLEFT JOIN core.instrument i ON i.instrument_id = f.instrument_id\nWHERE d.decided_at > now() - interval '6 hours'\nORDER BY d.score DESC",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisColorMode": "text",
+            "axisLabel": "Score",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "hue",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1,
+            "scaleDistribution": { "type": "linear" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Score" },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "barWidth": 0.8,
+        "barRadius": 0.1,
+        "groupWidth": 0.7,
+        "xTickLabelRotation": 0,
+        "xTickLabelMaxLength": 0,
+        "showValue": "auto",
+        "stacking": "none",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showValues": false,
+          "calcs": []
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "colorByField": "action",
+        "xField": "symbol"
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 300,
+      "type": "row",
+      "title": "📰 News Flow",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Recent News Headlines",
+      "description": "Latest ingested documents with event extraction results.",
+      "gridPos": { "h": 8, "w": 14, "x": 0, "y": 18 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  rd.ingested_at as \"Time\",\n  rd.headline as \"Headline\",\n  el.event_type as \"Event\",\n  el.direction_hint as \"Direction\",\n  el.materiality as \"Mat.\",\n  i.symbol as \"Symbol\",\n  CASE\n    WHEN el.event_type LIKE 'corp_%' THEN '🏢'\n    WHEN el.event_type LIKE 'macro_%' THEN '🌍'\n    WHEN el.event_type LIKE 'reg_%' THEN '⚖️'\n    WHEN el.event_type LIKE 'market_%' THEN '📊'\n    ELSE '📄'\n  END as \"Type\"\nFROM content.raw_document rd\nLEFT JOIN content.event_ledger el ON el.raw_document_id = rd.raw_document_id\nLEFT JOIN core.instrument i ON i.instrument_id = el.issuer_instrument_id\nORDER BY rd.ingested_at DESC\nLIMIT 15",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "text", "value": null }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [
+              { "id": "custom.width", "value": 140 },
+              { "id": "unit", "value": "dateTimeFromNow" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Headline" },
+            "properties": [
+              { "id": "custom.width", "value": 350 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Direction" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "positive": { "text": "▲ positive", "color": "#73BF69" },
+                      "negative": { "text": "▼ negative", "color": "#F2495C" },
+                      "neutral": { "text": "● neutral", "color": "#8AB8FF" }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Mat." },
+            "properties": [
+              { "id": "custom.width", "value": 60 },
+              { "id": "decimals", "value": 2 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "continuous-BlYlRd" }
+              },
+              { "id": "min", "value": 0 },
+              { "id": "max", "value": 1 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Symbol" },
+            "properties": [
+              { "id": "custom.width", "value": 70 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "super-light-blue" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Type" },
+            "properties": [
+              { "id": "custom.width", "value": 45 },
+              { "id": "custom.align", "value": "center" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Event" },
+            "properties": [
+              { "id": "custom.width", "value": 120 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "fields": ""
+        },
+        "sortBy": [
+          { "displayName": "Time", "desc": true }
+        ]
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 6,
+      "type": "piechart",
+      "title": "Event Types Today",
+      "description": "Distribution of event categories in the last 24 hours.",
+      "gridPos": { "h": 8, "w": 10, "x": 14, "y": 18 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  CASE\n    WHEN event_type LIKE 'corp_%' THEN 'Corporate'\n    WHEN event_type LIKE 'macro_%' THEN 'Macro'\n    WHEN event_type LIKE 'reg_%' THEN 'Regulatory'\n    WHEN event_type LIKE 'market_%' THEN 'Market'\n    ELSE 'Other'\n  END as category,\n  count(*) as cnt\nFROM content.event_ledger\nWHERE created_at > now() - interval '24 hours'\nGROUP BY 1",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic-by-name"
+          },
+          "custom": {
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false }
+          },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Corporate" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#8AB8FF" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Macro" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#FF9830" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Regulatory" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#B877D9" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Market" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#73BF69" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Other" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#C4D3E0" } }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": true,
+          "calcs": [],
+          "fields": "/cnt/"
+        },
+        "pieType": "donut",
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showValues": true,
+          "values": ["value", "percent"],
+          "calcs": []
+        },
+        "displayLabels": ["name", "percent"]
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 400,
+      "type": "row",
+      "title": "🧠 Forecast Detail",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Forecast Analysis",
+      "description": "Full forecast detail with confidence changes, hypotheses, horizon metrics, and decisions.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 27 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  i.symbol as \"Symbol\",\n  f.forecast_json->>'direction_hint' as \"Direction\",\n  (f.forecast_json->>'confidence_before')::text as \"Conf Before\",\n  (f.forecast_json->>'confidence_after')::text as \"Conf After\",\n  f.forecast_json->>'selected_hypothesis' as \"Hypothesis\",\n  fh1.p_outperform_benchmark as \"1d P(Out)\",\n  fh1.ret_q50 as \"1d Q50\",\n  fh5.p_outperform_benchmark as \"5d P(Out)\",\n  fh5.ret_q50 as \"5d Q50\",\n  d.action as \"Action\",\n  d.score as \"Score\"\nFROM forecasting.forecast_ledger f\nLEFT JOIN core.instrument i ON i.instrument_id = f.instrument_id\nLEFT JOIN forecasting.forecast_horizon fh1 ON fh1.forecast_id = f.forecast_id AND fh1.horizon_code = '1d'\nLEFT JOIN forecasting.forecast_horizon fh5 ON fh5.forecast_id = f.forecast_id AND fh5.horizon_code = '5d'\nLEFT JOIN forecasting.decision_ledger d ON d.forecast_id = f.forecast_id\nORDER BY f.forecasted_at DESC\nLIMIT 10",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false,
+            "filterable": true
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "text", "value": null }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Symbol" },
+            "properties": [
+              { "id": "custom.width", "value": 75 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "super-light-blue" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Direction" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "positive": { "text": "▲ UP", "color": "#73BF69" },
+                      "negative": { "text": "▼ DOWN", "color": "#F2495C" },
+                      "neutral": { "text": "● FLAT", "color": "#8AB8FF" }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Conf Before" },
+            "properties": [
+              { "id": "custom.width", "value": 85 },
+              { "id": "decimals", "value": 3 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Conf After" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              { "id": "decimals", "value": 3 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "continuous-GrYlRd" }
+              },
+              { "id": "min", "value": 0.4 },
+              { "id": "max", "value": 0.9 },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "#F2495C", "value": null },
+                    { "color": "#F2495C", "value": 0.5 },
+                    { "color": "#FADE2A", "value": 0.65 },
+                    { "color": "#73BF69", "value": 0.8 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Hypothesis" },
+            "properties": [
+              { "id": "custom.width", "value": 280 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto",
+                  "wrapText": true
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "1d P(Out)" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              { "id": "decimals", "value": 3 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "continuous-GrYlRd" }
+              },
+              { "id": "min", "value": 0.3 },
+              { "id": "max", "value": 0.8 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "1d Q50" },
+            "properties": [
+              { "id": "custom.width", "value": 80 },
+              { "id": "decimals", "value": 4 },
+              { "id": "unit", "value": "percentunit" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "5d P(Out)" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              { "id": "decimals", "value": 3 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "continuous-GrYlRd" }
+              },
+              { "id": "min", "value": 0.3 },
+              { "id": "max", "value": 0.8 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "5d Q50" },
+            "properties": [
+              { "id": "custom.width", "value": 80 },
+              { "id": "decimals", "value": 4 },
+              { "id": "unit", "value": "percentunit" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Action" },
+            "properties": [
+              { "id": "custom.width", "value": 80 },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "skip": { "text": "SKIP", "color": "#C4D3E0" },
+                      "queue": { "text": "QUEUE", "color": "#FADE2A" },
+                      "execute": { "text": "EXEC", "color": "#73BF69" },
+                      "inquire": { "text": "ASK", "color": "#8AB8FF" }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Score" },
+            "properties": [
+              { "id": "custom.width", "value": 75 },
+              { "id": "decimals", "value": 2 },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "gradient",
+                  "valueDisplayMode": "text"
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "continuous-blues" }
+              },
+              { "id": "min", "value": 0 },
+              { "id": "max", "value": 1 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "fields": ""
+        },
+        "sortBy": []
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 500,
+      "type": "row",
+      "title": "📊 Noise Gate & Throughput",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 35 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Signal vs Noise",
+      "description": "Documents that produced events (Signal) vs those that did not (Noise) in the last 24 hours.",
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 36 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  count(*) FILTER (WHERE el.event_id IS NOT NULL) as \"Signal\",\n  count(*) FILTER (WHERE el.event_id IS NULL) as \"Noise/Unmatched\"\nFROM content.raw_document rd\nLEFT JOIN content.event_ledger el ON el.raw_document_id = rd.raw_document_id\nWHERE rd.ingested_at > now() - interval '24 hours'",
+          "format": "table",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": { "text": "0", "color": "text" }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "text", "value": null }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Signal" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "#73BF69" }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Noise/Unmatched" },
+            "properties": [
+              {
+                "id": "color",
+                "value": { "mode": "fixed", "fixedColor": "#FF9830" }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"],
+          "fields": ""
+        },
+        "orientation": "horizontal",
+        "textMode": "value_and_name",
+        "wideLayout": true,
+        "colorMode": "background_solid",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "showPercentChange": false
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Pipeline Throughput",
+      "description": "Hourly document ingestion and event extraction throughput.",
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 36 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  date_trunc('hour', rd.ingested_at) as time,\n  count(*) as \"Documents\",\n  count(DISTINCT el.event_id) as \"Events\"\nFROM content.raw_document rd\nLEFT JOIN content.event_ledger el ON el.raw_document_id = rd.raw_document_id\nGROUP BY 1\nORDER BY 1",
+          "format": "time_series",
+          "editorMode": "code"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 30,
+            "gradientMode": "opacity",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Documents" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "bars" },
+              { "id": "custom.fillOpacity", "value": 40 },
+              { "id": "custom.gradientMode", "value": "scheme" },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#8AB8FF" } },
+              { "id": "custom.lineWidth", "value": 0 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Events" },
+            "properties": [
+              { "id": "custom.drawStyle", "value": "line" },
+              { "id": "custom.lineWidth", "value": 3 },
+              { "id": "custom.fillOpacity", "value": 15 },
+              { "id": "custom.gradientMode", "value": "scheme" },
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#73BF69" } },
+              { "id": "custom.pointSize", "value": 7 },
+              { "id": "custom.showPoints", "value": "always" }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showValues": "last",
+          "calcs": ["lastNotNull", "sum"]
+        }
+      },
+      "pluginVersion": "11.0.0"
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  }
+}
