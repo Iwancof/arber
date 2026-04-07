@@ -1,4 +1,4 @@
-.PHONY: help fmt lint typecheck test test-unit test-integration test-contract test-ui db-migrate db-verify api-validate plugin-build compose-up compose-down
+.PHONY: help fmt lint typecheck test test-unit test-integration test-contract test-ui db-migrate db-verify api-validate plugin-build compose-up compose-down pipeline
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -64,6 +64,9 @@ api-validate:  ## Validate OpenAPI spec (placeholder)
 
 dev:  ## Run development server
 	uvicorn backend.main:app --reload --host 0.0.0.0 --port 50000
+
+pipeline:  ## Run background pipeline worker
+	python -m backend.workers.cli
 
 # --- Grafana ---
 plugin-build:  ## Build Grafana plugins (placeholder)

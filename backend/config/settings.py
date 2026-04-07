@@ -24,6 +24,20 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
 
+    # Anthropic API (LLM Worker)
+    anthropic_api_key: str = ""
+    anthropic_default_model: str = "claude-opus-4-20250514"
+    anthropic_model_event_extract: str = ""  # falls back to default
+    anthropic_model_forecast: str = ""  # falls back to default
+    anthropic_max_tokens: int = 4096
+    anthropic_timeout_sec: int = 120
+
+    # Alpaca API (Market Data + Broker + News)
+    alpaca_api_key: str = ""
+    alpaca_secret_key: str = ""
+    alpaca_base_url: str = "https://paper-api.alpaca.markets"
+    alpaca_data_url: str = "https://data.alpaca.markets"
+
     # Execution mode
     execution_mode: str = "replay"  # replay | shadow | paper | micro_live | live
 
