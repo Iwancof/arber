@@ -1,6 +1,6 @@
 # Event Intelligence OS — Status
 
-## Current Phase: Phase 1 (Ingest Pipeline) - Complete
+## Current Phase: Phase 2 (Forecast & Decision) - Complete
 
 **Last Updated**: 2026-04-07
 
@@ -10,65 +10,57 @@
 |-------|--------|-------------|
 | Phase 0: Skeleton | **Complete** | プロジェクト構造, DB スキーマ, API 骨格, Grafana シェル |
 | Phase 1: Ingest | **Complete** | ORM モデル, API エンドポイント, ソースレジストリ, 取込サービス |
-| Phase 2: Forecast | Not Started | リトリーバル, 予測ワーカー, 判断レジャー |
+| Phase 2: Forecast | **Complete** | Worker Adapter, Forecast/Decision サービス, Dossier/Overlay API |
 | Phase 3: Manual+Replay | Not Started | プロンプトコンソール, リプレイエンジン |
 | Phase 4: Paper+Live | Not Started | ブローカーアダプター, 実行モード |
 | Phase 5: Extensibility | Not Started | プラグインレジストリ, スキーマレジストリ強化 |
 
-## Phase 1 Deliverables
+## Phase 2 Deliverables
 
-### SQLAlchemy ORM モデル (54 テーブル, 7 スキーマ)
-- [x] core: AppUser, Role, MarketProfile, Instrument, TradingVenue, BenchmarkMap, InstrumentAlias
-- [x] sources: SourceRegistry, SourceEndpoint, SourceBundle, WatchPlan, SourceCandidate, UniverseSet
-- [x] content: RawDocument, DedupCluster, EventLedger, EventAssetImpact, EventEvidenceLink
-- [x] forecasting: ForecastLedger, DecisionLedger, PromptTask, ReasoningTrace, PolicyPackRegistry
-- [x] execution: OrderLedger, ExecutionFill, PositionSnapshot
-- [x] feedback: OutcomeLedger, PostmortemLedger, ReliabilityStat
-- [x] ops: AuditLog, KillSwitch, WatcherInstance, OutboxEvent, JobRun
-- [x] extensions: FeatureFlag, SchemaRegistryEntry, EventTypeRegistry, PluginRegistry
-
-### Pydantic API スキーマ
-- [x] MarketProfileRead/Create/List, InstrumentRead/Create/List
-- [x] SourceRegistryRead/Create/Update/List, SourceEndpointRead/Create, SourceBundleRead/Create
-- [x] EventLedgerRead/List, EventDetailRead, RawDocumentRead
-- [x] PaginatedResponse, OrmBase
-
-### API エンドポイント (21 ルート)
-- [x] GET /v1/health
-- [x] GET/POST /v1/markets, GET /v1/markets/{market_code}
-- [x] GET/POST /v1/instruments, GET /v1/instruments/{instrument_id}
-- [x] GET/POST/PATCH /v1/source-registry, GET /v1/source-registry/{source_code}
-- [x] GET/POST /v1/source-registry/{source_code}/endpoints
-- [x] GET/POST /v1/source-bundles
-- [x] GET /v1/source-candidates, POST approve-provisional, POST promote
-- [x] GET /v1/events, GET /v1/events/{event_id}
-- [x] POST /v1/ingest/documents
+### Worker Adapter (ADR-004)
+- [x] WorkerAdapter ABC (health, execute, adapter_code, supported_task_types)
+- [x] WorkerTask / WorkerResult 統一契約 (dataclass)
+- [x] MockWorkerAdapter (決定的リプレイ用、SHA-256 ベースの擬似予測)
 
 ### サービス層
-- [x] Ingest service (SHA-256 dedup, content_hash + native_doc_id 重複検出)
+- [x] Forecast Pipeline (retrieval → worker → reasoning trace → forecast + horizons)
+- [x] Decision Policy (score 計算, action 決定, status 設定, risk gates)
+- [x] Retrieval Set 構築 (v1: simple rule-based)
 
-### テスト (17/17 passed)
-- [x] モデル登録テスト (54 テーブル, 7 スキーマ, レジャー分離)
-- [x] Pydantic スキーマテスト (デフォルト値, partial update, ORM mode)
-- [x] API ルートテスト (21 ルート登録)
-- [x] Ingest サービステスト (ハッシュ関数)
-- [x] ヘルスチェックテスト
-- [x] 設定テスト
+### Pydantic スキーマ
+- [x] ReasoningTraceRead, RetrievalSetRead/ItemRead
+- [x] ForecastLedgerRead (with horizons), ForecastHorizonRead, ForecastList
+- [x] DecisionLedgerRead (with reasons), DecisionReasonRead, DecisionList
+- [x] DossierRead (aggregate: decision+forecast+event+trace+prompts+orders+outcomes)
+- [x] OverlayPayload (ForecastBand, OverlayAnnotation, DecisionInterval)
+
+### API エンドポイント (26 ルート合計)
+- [x] GET /v1/forecasts, GET /v1/forecasts/{forecast_id}
+- [x] GET /v1/decisions
+- [x] GET /v1/decisions/{decision_id} (Dossier aggregate)
+- [x] GET /v1/overlays/{instrument_id} (Grafana panel data)
+
+### テスト (46/46 passed)
+- [x] Worker adapter テスト (9: 健全性, 決定性, ホライズン生成)
+- [x] Decision policy テスト (13: スコア計算, アクション決定, ステータス)
+- [x] Forecast スキーマテスト (6: Pydantic バリデーション)
+- [x] Phase 1 テスト全維持 (17)
+- [x] ルート登録テスト更新 (26 ルート)
 
 ## Architecture Summary
 
 - **Backend**: Python 3.14 / FastAPI / SQLAlchemy 2.0 (async)
-- **Database**: PostgreSQL 16 (7 schemas: core, sources, content, forecasting, execution, feedback, ops)
+- **Database**: PostgreSQL 16 (7 schemas, 54 tables)
 - **Cache/Queue**: Redis 7
 - **UI**: Grafana 11 (shell + custom plugins)
-- **Testing**: pytest + httpx (17 tests)
-- **Code Quality**: ruff (lint+format), mypy (strict)
+- **Worker**: Adapter pattern (ABC + MockWorkerAdapter)
+- **Policy**: Deterministic scoring (v1_simple policy version)
+- **Testing**: pytest 46 tests, ruff lint
 
-## Key Invariants
+## Key Design Decisions (Phase 2)
 
-1. レジャー分離: event, forecast, decision, order, outcome, postmortem は別テーブル
-2. 市場/ソース/プロバイダ抽象化: market_profile + registry + adapter パターン
-3. Grafana Shell + Plugin アーキテクチャ
-4. 実行モード段階: replay → shadow → paper → micro_live → live
-5. 追記指向: レジャーは append-only、修正は新行+リンク
-6. 契約バージョニング: 全 JSON ペイロードに schema_version
+1. **LLM は提案、Policy が決定**: Worker は forecast を生成、deterministic policy が action を決定
+2. **MockWorkerAdapter**: SHA-256 ハッシュベースの決定的出力でリプレイモードを支援
+3. **Dossier = 中央ビュー**: decision → forecast → event → trace → prompts → orders → outcomes を集約
+4. **Overlay = Grafana データ**: forecast_bands + annotations + decision_intervals をチャート用に提供
+5. **Policy v1**: シンプルな閾値ベース (将来は policy_pack_registry で拡張)
