@@ -7,6 +7,9 @@ from backend.api.v1.health import router as health_router
 from backend.api.v1.ingest import router as ingest_router
 from backend.api.v1.markets import router as markets_router
 from backend.api.v1.overlays import router as overlays_router
+from backend.api.v1.postmortems import router as postmortems_router
+from backend.api.v1.prompts import router as prompts_router
+from backend.api.v1.replay import router as replay_router
 from backend.api.v1.sources import router as sources_router
 
 api_v1_router = APIRouter(prefix="/v1")
@@ -18,3 +21,6 @@ api_v1_router.include_router(ingest_router)
 api_v1_router.include_router(forecasts_router)
 api_v1_router.include_router(dossier_router)
 api_v1_router.include_router(overlays_router)
+api_v1_router.include_router(postmortems_router)
+api_v1_router.include_router(prompts_router)
+api_v1_router.include_router(replay_router)

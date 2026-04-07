@@ -1,6 +1,6 @@
 # Event Intelligence OS — Status
 
-## Current Phase: Phase 2 (Forecast & Decision) - Complete
+## Current Phase: Phase 3 (Manual Bridge + Replay) - Complete
 
 **Last Updated**: 2026-04-07
 
@@ -11,56 +11,56 @@
 | Phase 0: Skeleton | **Complete** | プロジェクト構造, DB スキーマ, API 骨格, Grafana シェル |
 | Phase 1: Ingest | **Complete** | ORM モデル, API エンドポイント, ソースレジストリ, 取込サービス |
 | Phase 2: Forecast | **Complete** | Worker Adapter, Forecast/Decision サービス, Dossier/Overlay API |
-| Phase 3: Manual+Replay | Not Started | プロンプトコンソール, リプレイエンジン |
+| Phase 3: Manual+Replay | **Complete** | Prompt Bridge, Replay Engine, Postmortem Judge |
 | Phase 4: Paper+Live | Not Started | ブローカーアダプター, 実行モード |
 | Phase 5: Extensibility | Not Started | プラグインレジストリ, スキーマレジストリ強化 |
 
-## Phase 2 Deliverables
+## Phase 3 Deliverables
 
-### Worker Adapter (ADR-004)
-- [x] WorkerAdapter ABC (health, execute, adapter_code, supported_task_types)
-- [x] WorkerTask / WorkerResult 統一契約 (dataclass)
-- [x] MockWorkerAdapter (決定的リプレイ用、SHA-256 ベースの擬似予測)
+### Prompt Task ライフサイクル
+- [x] 状態遷移: created → visible → submitted → parsed → accepted/rejected/expired
+- [x] create_prompt_task() - タスク作成 + Decision を waiting_manual に
+- [x] transition_task_status() - バリデーション付き状態遷移
+- [x] submit_response() - レスポンス送信
+- [x] accept_response() - 受理 + Decision を approved に戻す
 
-### サービス層
-- [x] Forecast Pipeline (retrieval → worker → reasoning trace → forecast + horizons)
-- [x] Decision Policy (score 計算, action 決定, status 設定, risk gates)
-- [x] Retrieval Set 構築 (v1: simple rule-based)
+### Manual Expert Bridge
+- [x] should_escalate_to_manual() - エスカレーション判定
+- [x] トリガー: novel_event_type, high_materiality_low_confidence, large_position
 
-### Pydantic スキーマ
-- [x] ReasoningTraceRead, RetrievalSetRead/ItemRead
-- [x] ForecastLedgerRead (with horizons), ForecastHorizonRead, ForecastList
-- [x] DecisionLedgerRead (with reasons), DecisionReasonRead, DecisionList
-- [x] DossierRead (aggregate: decision+forecast+event+trace+prompts+orders+outcomes)
-- [x] OverlayPayload (ForecastBand, OverlayAnnotation, DecisionInterval)
+### Replay Engine
+- [x] create_replay_job() - リプレイジョブ作成 (JobRun)
+- [x] run_replay() - イベント一括再実行 (forecast + decision pipeline)
+- [x] MockWorkerAdapter 使用で決定的リプレイ
 
-### API エンドポイント (26 ルート合計)
-- [x] GET /v1/forecasts, GET /v1/forecasts/{forecast_id}
-- [x] GET /v1/decisions
-- [x] GET /v1/decisions/{decision_id} (Dossier aggregate)
-- [x] GET /v1/overlays/{instrument_id} (Grafana panel data)
+### Postmortem / Judge
+- [x] record_outcome() - 実現リターン記録
+- [x] judge_verdict() - 予測精度判定 (correct/wrong/mixed/insufficient)
+- [x] create_postmortem() - Postmortem 生成 + failure_codes
+- [x] レビューフラグ: requires_source_review, requires_prompt_review
 
-### テスト (46/46 passed)
-- [x] Worker adapter テスト (9: 健全性, 決定性, ホライズン生成)
-- [x] Decision policy テスト (13: スコア計算, アクション決定, ステータス)
-- [x] Forecast スキーマテスト (6: Pydantic バリデーション)
-- [x] Phase 1 テスト全維持 (17)
-- [x] ルート登録テスト更新 (26 ルート)
+### API エンドポイント (39 ルート合計, +13)
+- [x] GET/POST /v1/prompt-tasks, GET /v1/prompt-tasks/{id}
+- [x] POST /v1/prompt-tasks/{id}/make-visible
+- [x] GET/POST /v1/prompt-tasks/{id}/responses
+- [x] POST/GET /v1/replay-jobs, GET /v1/replay-jobs/{id}
+- [x] POST /v1/replay-jobs/{id}/run
+- [x] GET /v1/postmortems, GET /v1/postmortems/{id}
+- [x] GET /v1/outcomes/{forecast_id}
 
-## Architecture Summary
+### テスト (67/67 passed, +21)
+- [x] Prompt bridge テスト (6: エスカレーション判定)
+- [x] Postmortem judge テスト (8: verdict 判定ロジック)
+- [x] Phase 3 スキーマテスト (5: Pydantic バリデーション)
+- [x] ルートテスト更新 (39 ルート + メソッド検証)
 
-- **Backend**: Python 3.14 / FastAPI / SQLAlchemy 2.0 (async)
-- **Database**: PostgreSQL 16 (7 schemas, 54 tables)
-- **Cache/Queue**: Redis 7
-- **UI**: Grafana 11 (shell + custom plugins)
-- **Worker**: Adapter pattern (ABC + MockWorkerAdapter)
-- **Policy**: Deterministic scoring (v1_simple policy version)
-- **Testing**: pytest 46 tests, ruff lint
+## Cumulative Progress
 
-## Key Design Decisions (Phase 2)
-
-1. **LLM は提案、Policy が決定**: Worker は forecast を生成、deterministic policy が action を決定
-2. **MockWorkerAdapter**: SHA-256 ハッシュベースの決定的出力でリプレイモードを支援
-3. **Dossier = 中央ビュー**: decision → forecast → event → trace → prompts → orders → outcomes を集約
-4. **Overlay = Grafana データ**: forecast_bands + annotations + decision_intervals をチャート用に提供
-5. **Policy v1**: シンプルな閾値ベース (将来は policy_pack_registry で拡張)
+| カテゴリ | 数量 |
+|---------|------|
+| DB テーブル | 54 (7 schemas) |
+| API ルート | 39 |
+| テスト | 67 |
+| サービス | 6 (ingest, forecast, decision, prompt_bridge, replay, postmortem) |
+| Adapter | 2 (WorkerAdapter ABC, MockWorkerAdapter) |
+| コミット | 4 |
