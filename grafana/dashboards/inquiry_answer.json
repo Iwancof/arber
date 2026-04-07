@@ -1,0 +1,735 @@
+{
+  "uid": "eos-inquiry-answer",
+  "title": "Inquiry - Answer Console",
+  "tags": ["event-intelligence-os", "inquiry", "human-ops", "operator"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "id": 100,
+      "type": "row",
+      "title": "Pending Tasks Summary",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Awaiting Response",
+      "description": "Tasks in visible, claimed, or awaiting_response status",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 1 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT count(*) FROM human_ops.inquiry_task WHERE task_status IN ('visible','claimed','awaiting_response')",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 15 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Overdue",
+      "description": "Active tasks past their deadline",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT count(*) FROM human_ops.inquiry_task WHERE task_status IN ('visible','claimed','awaiting_response') AND deadline_at < now()",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Accepted Today",
+      "description": "Resolutions accepted since start of today",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT count(*) FROM human_ops.inquiry_resolution WHERE resolution_status = 'accepted' AND resolved_at >= CURRENT_DATE",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto"
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 101,
+      "type": "row",
+      "title": "Active Questions",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Questions Needing Answers",
+      "description": "Main operator working table -- claim tasks and submit responses from here",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 6 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  it.inquiry_task_id as \"Task ID\",\n  ic.primary_symbol as \"Symbol\",\n  ic.inquiry_kind as \"Kind\",\n  ic.urgency_class as \"Urgency\",\n  it.question_title as \"Question\",\n  it.question_text as \"Details\",\n  it.task_status as \"Status\",\n  it.sla_class as \"SLA\",\n  it.deadline_at as \"Deadline\",\n  it.priority_score as \"Priority\",\n  CASE\n    WHEN it.deadline_at < now() THEN 'OVERDUE'\n    WHEN it.deadline_at < now() + interval '30 minutes' THEN 'DUE SOON'\n    ELSE 'OK'\n  END as \"Time Status\",\n  ic.title as \"Case Title\"\nFROM human_ops.inquiry_task it\nJOIN human_ops.inquiry_case ic ON ic.inquiry_case_id = it.inquiry_case_id\nWHERE it.task_status IN ('draft','visible','claimed','awaiting_response','submitted')\nORDER BY\n  CASE ic.urgency_class WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 ELSE 4 END,\n  it.priority_score DESC,\n  it.deadline_at ASC",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Task ID" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Question" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "auto", "wrapText": true }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Details" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 400
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "auto", "wrapText": true }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time Status" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "OVERDUE": { "color": "red", "text": "OVERDUE" } } },
+                  { "type": "value", "options": { "DUE SOON": { "color": "orange", "text": "DUE SOON" } } },
+                  { "type": "value", "options": { "OK": { "color": "green", "text": "OK" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Urgency" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "critical": { "color": "red", "text": "critical" } } },
+                  { "type": "value", "options": { "high": { "color": "orange", "text": "high" } } },
+                  { "type": "value", "options": { "normal": { "color": "green", "text": "normal" } } },
+                  { "type": "value", "options": { "low": { "color": "blue", "text": "low" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Priority" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Status" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "draft": { "color": "text", "text": "draft" } } },
+                  { "type": "value", "options": { "visible": { "color": "blue", "text": "visible" } } },
+                  { "type": "value", "options": { "claimed": { "color": "purple", "text": "claimed" } } },
+                  { "type": "value", "options": { "awaiting_response": { "color": "orange", "text": "awaiting_response" } } },
+                  { "type": "value", "options": { "submitted": { "color": "green", "text": "submitted" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Symbol" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "SLA" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": true,
+          "reducer": ["count"],
+          "countRows": true,
+          "fields": ""
+        },
+        "sortBy": [
+          { "displayName": "Priority", "desc": true }
+        ]
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 102,
+      "type": "row",
+      "title": "Question Context",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Related Events",
+      "description": "Recent events from the event ledger for context",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 19 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  e.event_type,\n  e.direction_hint,\n  e.materiality,\n  i.symbol,\n  rd.headline,\n  e.created_at\nFROM content.event_ledger e\nLEFT JOIN core.instrument i ON i.instrument_id = e.issuer_instrument_id\nLEFT JOIN content.raw_document rd ON rd.raw_document_id = e.raw_document_id\nORDER BY e.created_at DESC\nLIMIT 10",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "headline" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 300
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "auto", "wrapText": true }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "direction_hint" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "bullish": { "color": "green", "text": "bullish" } } },
+                  { "type": "value", "options": { "bearish": { "color": "red", "text": "bearish" } } },
+                  { "type": "value", "options": { "neutral": { "color": "text", "text": "neutral" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "materiality" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "high": { "color": "red", "text": "high" } } },
+                  { "type": "value", "options": { "medium": { "color": "orange", "text": "medium" } } },
+                  { "type": "value", "options": { "low": { "color": "green", "text": "low" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "countRows": false,
+          "fields": ""
+        }
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Related Forecasts",
+      "description": "Recent forecasts for context when answering questions",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 19 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  i.symbol,\n  f.model_family as \"Model\",\n  f.confidence,\n  CASE\n    WHEN f.forecast_json->>'direction_hint' IS NOT NULL\n    THEN f.forecast_json->>'direction_hint'\n    WHEN f.forecast_json->>'direction' IS NOT NULL\n    THEN f.forecast_json->>'direction'\n    ELSE 'unknown'\n  END as \"Direction\",\n  f.forecasted_at\nFROM forecasting.forecast_ledger f\nLEFT JOIN core.instrument i ON i.instrument_id = f.instrument_id\nORDER BY f.forecasted_at DESC\nLIMIT 10",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "confidence" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 1
+              },
+              {
+                "id": "custom.width",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Direction" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "bullish": { "color": "green", "text": "bullish" } } },
+                  { "type": "value", "options": { "bearish": { "color": "red", "text": "bearish" } } },
+                  { "type": "value", "options": { "neutral": { "color": "text", "text": "neutral" } } },
+                  { "type": "value", "options": { "unknown": { "color": "text", "text": "unknown" } } }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "countRows": false,
+          "fields": ""
+        }
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 103,
+      "type": "row",
+      "title": "Response History",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 29 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Recent Responses & Resolutions",
+      "description": "History of submitted responses and their resolution status",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 30 },
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "P51983C8ED1C8EA5A"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P51983C8ED1C8EA5A"
+          },
+          "rawSql": "SELECT\n  ic.primary_symbol as \"Symbol\",\n  it.question_title as \"Question\",\n  ir.response_channel as \"Channel\",\n  ir.response_status as \"Response Status\",\n  ir.schema_valid as \"Valid\",\n  substring(ir.raw_response from 1 for 200) as \"Response Preview\",\n  ires.resolution_status as \"Resolution\",\n  ires.effective_weight as \"Weight\",\n  ir.submitted_at as \"Submitted\"\nFROM human_ops.inquiry_response ir\nJOIN human_ops.inquiry_task it ON it.inquiry_task_id = ir.inquiry_task_id\nJOIN human_ops.inquiry_case ic ON ic.inquiry_case_id = it.inquiry_case_id\nLEFT JOIN human_ops.inquiry_resolution ires ON ires.inquiry_response_id = ir.inquiry_response_id\nORDER BY ir.submitted_at DESC\nLIMIT 20",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": true,
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Response Status" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "accepted": { "color": "green", "text": "accepted" } } },
+                  { "type": "value", "options": { "rejected": { "color": "red", "text": "rejected" } } },
+                  { "type": "value", "options": { "pending": { "color": "yellow", "text": "pending" } } },
+                  { "type": "value", "options": { "submitted": { "color": "blue", "text": "submitted" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Resolution" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "accepted": { "color": "green", "text": "accepted" } } },
+                  { "type": "value", "options": { "rejected": { "color": "red", "text": "rejected" } } },
+                  { "type": "value", "options": { "expired": { "color": "orange", "text": "expired" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Valid" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "value", "options": { "true": { "color": "green", "text": "valid" } } },
+                  { "type": "value", "options": { "false": { "color": "red", "text": "invalid" } } }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Response Preview" },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 350
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "auto", "wrapText": true }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Weight" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "gauge",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "min",
+                "value": 0
+              },
+              {
+                "id": "max",
+                "value": 1
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": true,
+          "reducer": ["count"],
+          "countRows": true,
+          "fields": ""
+        }
+      },
+      "pluginVersion": "11.0.0"
+    },
+    {
+      "id": 104,
+      "type": "row",
+      "title": "How to Answer",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 8,
+      "type": "text",
+      "title": "Instructions",
+      "description": "Quick reference for the inquiry response API",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 41 },
+      "options": {
+        "mode": "markdown",
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "### How to Answer Inquiries\n\n1. **Claim** a task: `POST /v1/inquiry/tasks/{taskId}/claim`\n2. **Submit response**: `POST /v1/inquiry/tasks/{taskId}/submit-response`\n   Body: `{\"response_channel\": \"direct_answer\", \"raw_response\": \"{...}\"}`\n3. **Accept response**: `POST /v1/inquiry/tasks/{taskId}/accept`\n   Body: `{\"response_id\": \"...\", \"effective_weight\": 1.0}`\n\nAPI Base: http://localhost:50000/v1\nAPI Docs: http://localhost:50000/docs"
+      },
+      "pluginVersion": "11.0.0"
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {}
+}

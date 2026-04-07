@@ -9,6 +9,7 @@ from backend.api.v1.health import router as health_router
 from backend.api.v1.ingest import router as ingest_router
 from backend.api.v1.inquiry import router as inquiry_router
 from backend.api.v1.markets import router as markets_router
+from backend.api.v1.ops_chat import router as ops_chat_router
 from backend.api.v1.overlays import router as overlays_router
 from backend.api.v1.postmortems import router as postmortems_router
 from backend.api.v1.prompts import router as prompts_router
@@ -30,3 +31,4 @@ api_v1_router.include_router(replay_router)
 api_v1_router.include_router(execution_router)
 api_v1_router.include_router(extensions_router)
 api_v1_router.include_router(inquiry_router)
+api_v1_router.include_router(ops_chat_router)

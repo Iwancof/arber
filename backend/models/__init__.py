@@ -66,6 +66,17 @@ from backend.models.ops import (
     SystemConfig,
     WatcherInstance,
 )
+from backend.models.ops_chat import (
+    ChatActionExecution,
+    ChatActionProposal,
+    ChatIntent,
+    ChatMemoryNote,
+    ChatMessage,
+    ChatModeTransition,
+    ChatSession,
+    ContextCapsule,
+    ContextCapsuleSourceRef,
+)
 from backend.models.sources import (
     SourceBundle,
     SourceBundleItem,
@@ -107,4 +118,10 @@ __all__ = [
     "InquiryAssignment", "InquiryPresence",
     "InquiryResponse", "InquiryResolution",
     "InquiryMetricSnapshot",
+    # ops_chat
+    "ChatSession", "ChatMessage",
+    "ContextCapsule", "ContextCapsuleSourceRef",
+    "ChatIntent", "ChatActionProposal",
+    "ChatActionExecution", "ChatMemoryNote",
+    "ChatModeTransition",
 ]
