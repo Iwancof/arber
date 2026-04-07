@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from backend.api.v1.dossier import router as dossier_router
 from backend.api.v1.events import router as events_router
 from backend.api.v1.execution import router as execution_router
+from backend.api.v1.extensions import router as extensions_router
 from backend.api.v1.forecasts import router as forecasts_router
 from backend.api.v1.health import router as health_router
 from backend.api.v1.ingest import router as ingest_router
@@ -26,3 +27,4 @@ api_v1_router.include_router(postmortems_router)
 api_v1_router.include_router(prompts_router)
 api_v1_router.include_router(replay_router)
 api_v1_router.include_router(execution_router)
+api_v1_router.include_router(extensions_router)

@@ -4,7 +4,7 @@ from backend.api.v1.router import api_v1_router
 
 
 def test_all_expected_routes_registered():
-    """V1 router should contain all Phase 1-4 routes."""
+    """V1 router should contain all Phase 1-5 routes."""
     paths = [
         route.path for route in api_v1_router.routes
     ]
@@ -67,11 +67,28 @@ def test_all_expected_routes_registered():
         "/v1/kill-switches/{kill_switch_id}/clear"
         in paths
     )
+    # Phase 5: Feature flags
+    assert "/v1/feature-flags" in paths
+    assert "/v1/feature-flags/{flag_code}" in paths
+    # Phase 5: Schema registry
+    assert "/v1/schema-registry" in paths
+    # Phase 5: Plugins
+    assert "/v1/plugins" in paths
+    assert (
+        "/v1/plugins/{plugin_code}/enable" in paths
+    )
+    assert (
+        "/v1/plugins/{plugin_code}/disable" in paths
+    )
+    # Phase 5: Event types
+    assert "/v1/event-types" in paths
+    # Phase 5: Contract compatibility
+    assert "/v1/contracts" in paths
 
 
 def test_route_count():
-    """Should have 46 routes registered."""
-    assert len(api_v1_router.routes) == 46
+    """Should have 59 routes registered."""
+    assert len(api_v1_router.routes) == 59
 
 
 def _all_methods_for(path: str) -> set[str]:
@@ -135,3 +152,50 @@ def test_kill_switch_routes_methods():
         "/v1/kill-switches/{kill_switch_id}/clear",
     )
     assert "POST" in clear
+
+
+def test_feature_flag_routes_methods():
+    """Feature flag routes should have correct methods."""
+    ff = _all_methods_for("/v1/feature-flags")
+    assert "GET" in ff
+    assert "POST" in ff
+    patch = _all_methods_for(
+        "/v1/feature-flags/{flag_code}",
+    )
+    assert "PATCH" in patch
+
+
+def test_schema_registry_routes_methods():
+    """Schema registry routes have correct methods."""
+    sr = _all_methods_for("/v1/schema-registry")
+    assert "GET" in sr
+    assert "POST" in sr
+
+
+def test_plugin_routes_methods():
+    """Plugin routes should have correct methods."""
+    pl = _all_methods_for("/v1/plugins")
+    assert "GET" in pl
+    assert "POST" in pl
+    enable = _all_methods_for(
+        "/v1/plugins/{plugin_code}/enable",
+    )
+    assert "POST" in enable
+    disable = _all_methods_for(
+        "/v1/plugins/{plugin_code}/disable",
+    )
+    assert "POST" in disable
+
+
+def test_event_type_routes_methods():
+    """Event type routes should have correct methods."""
+    et = _all_methods_for("/v1/event-types")
+    assert "GET" in et
+    assert "POST" in et
+
+
+def test_contract_routes_methods():
+    """Contract routes should have correct methods."""
+    ct = _all_methods_for("/v1/contracts")
+    assert "GET" in ct
+    assert "POST" in ct
