@@ -20,6 +20,7 @@ from backend.core.execution_mode import (
     ExecutionMode,
     validate_mode_for_order_submission,
 )
+from backend.core.kill_switch import check_trade_allowed
 from backend.core.outbox import emit_event
 from backend.models.core import Instrument
 from backend.models.execution import (
@@ -28,24 +29,6 @@ from backend.models.execution import (
     PositionSnapshot,
 )
 from backend.models.forecasting import DecisionLedger
-from backend.models.ops import KillSwitch
-
-
-async def check_kill_switch(
-    db: AsyncSession,
-    *,
-    scope_type: str = "global",
-    scope_key: str = "all",
-) -> KillSwitch | None:
-    """Check if a kill switch is active for scope."""
-    result = await db.execute(
-        select(KillSwitch).where(
-            KillSwitch.scope_type == scope_type,
-            KillSwitch.scope_key == scope_key,
-            KillSwitch.active.is_(True),
-        )
-    )
-    return result.scalar_one_or_none()
 
 
 async def submit_order(
@@ -68,13 +51,6 @@ async def submit_order(
     # Layer 2: Adapter-level mode guard
     validate_adapter_for_mode(broker, mode)
 
-    # Check global kill switch
-    global_ks = await check_kill_switch(db)
-    if global_ks:
-        raise RuntimeError(
-            f"Kill switch active: {global_ks.reason}"
-        )
-
     # Load decision
     d_result = await db.execute(
         select(DecisionLedger).where(
@@ -82,6 +58,16 @@ async def submit_order(
         )
     )
     decision = d_result.scalar_one()
+
+    # Determine side from action (needed for kill switch check)
+    side = (
+        "buy"
+        if decision.action == "long_candidate"
+        else "sell"
+    )
+
+    # Scoped kill switch check (after loading decision for side)
+    await check_trade_allowed(db, side=side)
 
     # Load forecast to get instrument
     from backend.models.forecasting import ForecastLedger
@@ -102,13 +88,6 @@ async def submit_order(
         )
     )
     instrument = i_result.scalar_one()
-
-    # Determine side from action
-    side = (
-        "buy"
-        if decision.action == "long_candidate"
-        else "sell"
-    )
 
     # Build order intent
     qty = decision.size_cap or Decimal("1")

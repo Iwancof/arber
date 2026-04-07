@@ -120,7 +120,11 @@ class KillSwitch(Base):
             name="uq_kill_switch_scope",
         ),
         CheckConstraint(
-            "scope_type IN ('global','market','strategy','source','broker')",
+            "scope_type IN ("
+            "'global','market','strategy','source','broker',"
+            "'trade_halt_global','reduce_only_global',"
+            "'decision_halt','source_ingest_pause','full_freeze'"
+            ")",
             name="ck_kill_switch_scope_type",
         ),
         {"schema": "ops"},

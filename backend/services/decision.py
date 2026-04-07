@@ -12,6 +12,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.kill_switch import check_decision_allowed
 from backend.core.outbox import emit_event
 from backend.models.forecasting import (
     DecisionLedger,
@@ -145,6 +146,40 @@ async def evaluate_forecast(
         select(ForecastLedger).where(ForecastLedger.forecast_id == forecast_id)
     )
     forecast = forecast_result.scalar_one()
+
+    # Kill switch: force no_trade when decision engine is halted
+    decisions_ok = await check_decision_allowed(db)
+    if not decisions_ok:
+        decision = DecisionLedger(
+            forecast_id=forecast_id,
+            market_profile_id=forecast.market_profile_id,
+            execution_mode=execution_mode,
+            score=Decimal("0"),
+            action="no_trade",
+            decision_status="suppressed",
+            policy_version=DEFAULT_POLICY_VERSION,
+            reason_codes_json=["kill_switch_active"],
+        )
+        db.add(decision)
+        await db.flush()
+        reason = DecisionReason(
+            decision_id=decision.decision_id,
+            source_of_reason="policy",
+            reason_code="kill_switch_active",
+            score_contribution=Decimal("0"),
+            message="Decision halted by kill switch",
+        )
+        db.add(reason)
+        await emit_event(
+            db,
+            event_type="created",
+            aggregate_type="decision",
+            aggregate_id=str(decision.decision_id),
+            payload={"action": "no_trade", "reason": "kill_switch"},
+        )
+        await db.commit()
+        await db.refresh(decision)
+        return decision
 
     horizon_result = await db.execute(
         select(ForecastHorizon).where(ForecastHorizon.forecast_id == forecast_id)

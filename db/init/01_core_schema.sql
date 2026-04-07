@@ -604,7 +604,7 @@ CREATE TABLE IF NOT EXISTS ops.audit_log (
 
 CREATE TABLE IF NOT EXISTS ops.kill_switch (
     kill_switch_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    scope_type text NOT NULL CHECK (scope_type IN ('global','market','strategy','source','broker')),
+    scope_type text NOT NULL CHECK (scope_type IN ('global','market','strategy','source','broker','trade_halt_global','reduce_only_global','decision_halt','source_ingest_pause','full_freeze')),
     scope_key text NOT NULL,
     active boolean NOT NULL DEFAULT true,
     reason text NOT NULL,

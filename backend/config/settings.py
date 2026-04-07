@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
+    # Auth
+    auth_disabled: bool = True
+    jwt_secret: str = "dev-secret-change-in-production"
+    jwt_algorithm: str = "HS256"
+
     # Execution mode
     execution_mode: str = "replay"  # replay | shadow | paper | micro_live | live
 

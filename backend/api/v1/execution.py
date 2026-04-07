@@ -6,6 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.auth import (
+    Capability,
+    CurrentUser,
+    require_capability,
+)
 from backend.db.session import get_db
 from backend.models.execution import (
     ExecutionFill,
@@ -186,6 +191,9 @@ async def list_kill_switches(
 async def activate_kill_switch(
     body: KillSwitchActivate,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_capability(Capability.CAN_KILL_SWITCH)
+    ),
 ) -> KillSwitchRead:
     """Activate a new kill switch."""
     ks = KillSwitch(
@@ -208,6 +216,9 @@ async def activate_kill_switch(
 async def clear_kill_switch(
     kill_switch_id: UUID,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_capability(Capability.CAN_KILL_SWITCH)
+    ),
 ) -> KillSwitchRead:
     """Clear (deactivate) a kill switch."""
     from datetime import UTC, datetime

@@ -9,6 +9,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.auth import (
+    CurrentUser,
+    Role,
+    require_role,
+)
 from backend.db.session import get_db
 from backend.models.extensions import (
     ContractCompatibility,
@@ -86,6 +91,9 @@ async def list_feature_flags(
 async def create_feature_flag(
     body: FeatureFlagCreate,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_role(Role.ADMIN)
+    ),
 ) -> FeatureFlagRead:
     flag = FeatureFlag(**body.model_dump())
     db.add(flag)
@@ -102,6 +110,9 @@ async def update_feature_flag(
     flag_code: str,
     body: FeatureFlagUpdate,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_role(Role.ADMIN)
+    ),
 ) -> FeatureFlagRead:
     result = await db.execute(
         select(FeatureFlag).where(
@@ -249,6 +260,9 @@ async def list_plugins(
 async def create_plugin(
     body: PluginRegistryCreate,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_role(Role.ADMIN)
+    ),
 ) -> PluginRegistryRead:
     plugin = PluginRegistry(**body.model_dump())
     db.add(plugin)
@@ -264,6 +278,9 @@ async def create_plugin(
 async def enable_plugin(
     plugin_code: str,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_role(Role.ADMIN)
+    ),
 ) -> PluginRegistryRead:
     result = await db.execute(
         select(PluginRegistry).where(
@@ -289,6 +306,9 @@ async def enable_plugin(
 async def disable_plugin(
     plugin_code: str,
     db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(
+        require_role(Role.ADMIN)
+    ),
 ) -> PluginRegistryRead:
     result = await db.execute(
         select(PluginRegistry).where(

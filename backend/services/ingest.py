@@ -11,6 +11,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.core.kill_switch import check_source_ingest_allowed
 from backend.core.outbox import emit_event
 from backend.models.content import DedupCluster, RawDocument
 
@@ -39,7 +40,18 @@ async def ingest_document(
     """Ingest a raw document with deduplication.
 
     Returns the RawDocument (existing if duplicate, new otherwise).
+    Raises RuntimeError if source ingest is paused by kill switch.
     """
+    # Kill switch: check source-level ingest pause
+    ingest_ok = await check_source_ingest_allowed(
+        db, source_id=str(source_id)
+    )
+    if not ingest_ok:
+        raise RuntimeError(
+            f"Source ingest paused for source_id={source_id}. "
+            f"Kill switch SOURCE_INGEST_PAUSE or FULL_FREEZE is active."
+        )
+
     content_for_hash = raw_text or str(raw_payload_json)
     content_hash = await compute_content_hash(content_for_hash)
 
