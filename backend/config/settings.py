@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # Anthropic API (LLM Worker)
     anthropic_api_key: str = ""
-    anthropic_default_model: str = "claude-opus-4-20250514"
+    anthropic_default_model: str = "claude-opus-4-6"
     anthropic_model_event_extract: str = ""  # falls back to default
     anthropic_model_forecast: str = ""  # falls back to default
     anthropic_max_tokens: int = 4096
