@@ -24,14 +24,26 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-in-production"
     jwt_algorithm: str = "HS256"
 
-    # Anthropic API (LLM Worker)
+    # LLM Provider selection: "anthropic" or "openai"
+    llm_provider: str = "anthropic"
+
+    # Anthropic API
     anthropic_api_key: str = ""
     anthropic_default_model: str = "claude-opus-4-6"
-    anthropic_model_event_extract: str = ""  # falls back to default
-    anthropic_model_forecast: str = ""  # falls back to default
-    anthropic_model_noise: str = ""  # falls back to default (Opus)
+    anthropic_model_event_extract: str = ""
+    anthropic_model_forecast: str = ""
+    anthropic_model_noise: str = ""
     anthropic_max_tokens: int = 4096
     anthropic_timeout_sec: int = 120
+
+    # OpenAI API
+    openai_api_key: str = ""
+    openai_default_model: str = "gpt-4.1"
+    openai_model_event_extract: str = ""
+    openai_model_forecast: str = ""
+    openai_model_noise: str = ""
+    openai_max_tokens: int = 4096
+    openai_timeout_sec: int = 120
 
     # Alpaca API (Market Data + Broker + News)
     alpaca_api_key: str = ""

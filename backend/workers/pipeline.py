@@ -15,8 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.adapters.source.alpaca_news import (
     AlpacaNewsAdapter,
 )
-from backend.adapters.worker.anthropic_worker import (
-    AnthropicWorkerAdapter,
+from backend.adapters.worker.registry import (
+    get_worker_adapter,
 )
 from backend.config.settings import settings
 from backend.core.trace import new_trace
@@ -44,7 +44,7 @@ class PipelineWorker:
         self._symbols = symbols or []
         self._market_profile_id = market_profile_id
         self._news = AlpacaNewsAdapter()
-        self._worker = AnthropicWorkerAdapter()
+        self._worker = get_worker_adapter()
         self._running = False
 
     async def run_once(self) -> dict[str, int]:
