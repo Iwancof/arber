@@ -44,7 +44,10 @@ async def check_time_exits(
             OrderLedger.execution_mode == "paper",
         )
     )
-    orders = list(result.scalars().all())
+    orders = [
+        o for o in result.scalars().all()
+        if not (o.metadata_json or {}).get("exited")
+    ]
 
     for order in orders:
         meta = order.metadata_json or {}
@@ -98,6 +101,7 @@ async def check_stop_exits(
         o.metadata_json.get("symbol", ""): o
         for o in result.scalars().all()
         if o.metadata_json
+        and not o.metadata_json.get("exited")
     }
 
     for pos in positions:
@@ -172,7 +176,8 @@ async def _close_position(
 
     status = await broker.submit(intent)
 
-    # Update original order metadata
+    # Mark order as exited so it won't be
+    # picked up again by subsequent exit loops
     meta["exit_reason"] = reason
     meta["exit_time"] = (
         datetime.now(UTC).isoformat()
@@ -180,7 +185,9 @@ async def _close_position(
     meta["exit_order_id"] = (
         status.client_order_id
     )
+    meta["exited"] = True
     order.metadata_json = meta
+    order.status = "canceled"
 
     await emit_event(
         db,

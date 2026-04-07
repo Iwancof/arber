@@ -195,15 +195,41 @@ async def activate_kill_switch(
         require_capability(Capability.CAN_KILL_SWITCH)
     ),
 ) -> KillSwitchRead:
-    """Activate a new kill switch."""
-    ks = KillSwitch(
-        scope_type=body.scope_type,
-        scope_key=body.scope_key,
-        active=True,
-        reason=body.reason,
-        activated_by=body.activated_by,
+    """Activate a kill switch.
+
+    If a cleared (inactive) switch exists for the
+    same scope, re-activate it instead of inserting
+    a duplicate that would violate the unique
+    constraint.
+    """
+    from datetime import UTC, datetime
+
+    # Check for existing switch with same scope
+    existing = await db.execute(
+        select(KillSwitch).where(
+            KillSwitch.scope_type == body.scope_type,
+            KillSwitch.scope_key == body.scope_key,
+        )
     )
-    db.add(ks)
+    ks = existing.scalar_one_or_none()
+
+    if ks is not None:
+        # Re-activate the existing row
+        ks.active = True
+        ks.reason = body.reason
+        ks.activated_by = body.activated_by
+        ks.activated_at = datetime.now(UTC)
+        ks.cleared_at = None
+    else:
+        ks = KillSwitch(
+            scope_type=body.scope_type,
+            scope_key=body.scope_key,
+            active=True,
+            reason=body.reason,
+            activated_by=body.activated_by,
+        )
+        db.add(ks)
+
     await db.commit()
     await db.refresh(ks)
     return KillSwitchRead.model_validate(ks)

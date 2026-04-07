@@ -89,8 +89,39 @@ async def submit_order(
     )
     instrument = i_result.scalar_one()
 
+    # Convert notional USD (size_cap) to shares
+    size_cap = decision.size_cap or Decimal("100")
+    from backend.adapters.source.alpaca_market_data import (
+        AlpacaMarketDataAdapter,
+    )
+    mkt = AlpacaMarketDataAdapter()
+    price = await mkt.get_latest_price(
+        instrument.symbol
+    )
+    if price and price > 0:
+        qty = (size_cap / price).to_integral_value(
+            rounding="ROUND_DOWN"
+        )
+        qty = max(qty, Decimal("1"))
+    else:
+        qty = Decimal("1")
+
+    # Determine trade_horizon from forecast horizons
+    from backend.models.forecasting import ForecastHorizon
+    fh_result = await db.execute(
+        select(ForecastHorizon.horizon_code).where(
+            ForecastHorizon.forecast_id
+            == decision.forecast_id
+        )
+    )
+    horizon_codes = [
+        r for r in fh_result.scalars().all()
+    ]
+    trade_horizon = (
+        "1d" if "1d" in horizon_codes else "5d"
+    )
+
     # Build order intent
-    qty = decision.size_cap or Decimal("1")
     intent = OrderIntent(
         instrument_id=instrument.instrument_id,
         symbol=instrument.symbol,
@@ -119,6 +150,10 @@ async def submit_order(
         qty=qty,
         status=status.status,
         status_reason=status.status_reason,
+        metadata_json={
+            "symbol": instrument.symbol,
+            "trade_horizon": trade_horizon,
+        },
     )
     db.add(order)
     await db.flush()

@@ -223,6 +223,7 @@ async def build_single_outcome(
         },
     )
     db.add(outcome)
+    await db.flush()  # populate outcome_id
 
     await emit_event(
         db,
