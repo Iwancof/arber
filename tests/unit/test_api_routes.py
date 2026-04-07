@@ -4,7 +4,7 @@ from backend.api.v1.router import api_v1_router
 
 
 def test_all_expected_routes_registered():
-    """V1 router should contain all Phase 1-3 routes."""
+    """V1 router should contain all Phase 1-4 routes."""
     paths = [
         route.path for route in api_v1_router.routes
     ]
@@ -54,11 +54,24 @@ def test_all_expected_routes_registered():
     assert "/v1/replay-jobs" in paths
     assert "/v1/replay-jobs/{job_id}" in paths
     assert "/v1/replay-jobs/{job_id}/run" in paths
+    # Phase 4: Orders
+    assert "/v1/orders" in paths
+    assert "/v1/orders/{order_id}" in paths
+    assert "/v1/orders/{order_id}/fills" in paths
+    # Phase 4: Positions
+    assert "/v1/positions" in paths
+    # Phase 4: Kill switches
+    assert "/v1/kill-switches" in paths
+    assert "/v1/kill-switches/activate" in paths
+    assert (
+        "/v1/kill-switches/{kill_switch_id}/clear"
+        in paths
+    )
 
 
 def test_route_count():
-    """Should have 39 routes registered."""
-    assert len(api_v1_router.routes) == 39
+    """Should have 46 routes registered."""
+    assert len(api_v1_router.routes) == 46
 
 
 def _all_methods_for(path: str) -> set[str]:
@@ -90,3 +103,35 @@ def test_replay_routes_methods():
         "/v1/replay-jobs/{job_id}/run",
     )
     assert "POST" in run
+
+
+def test_order_routes_methods():
+    """Order routes should have correct methods."""
+    orders = _all_methods_for("/v1/orders")
+    assert "GET" in orders
+    detail = _all_methods_for("/v1/orders/{order_id}")
+    assert "GET" in detail
+    fills = _all_methods_for(
+        "/v1/orders/{order_id}/fills",
+    )
+    assert "GET" in fills
+
+
+def test_position_routes_methods():
+    """Position routes should have correct methods."""
+    pos = _all_methods_for("/v1/positions")
+    assert "GET" in pos
+
+
+def test_kill_switch_routes_methods():
+    """Kill switch routes should have correct methods."""
+    ks = _all_methods_for("/v1/kill-switches")
+    assert "GET" in ks
+    activate = _all_methods_for(
+        "/v1/kill-switches/activate",
+    )
+    assert "POST" in activate
+    clear = _all_methods_for(
+        "/v1/kill-switches/{kill_switch_id}/clear",
+    )
+    assert "POST" in clear

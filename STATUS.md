@@ -1,6 +1,6 @@
 # Event Intelligence OS — Status
 
-## Current Phase: Phase 3 (Manual Bridge + Replay) - Complete
+## Current Phase: Phase 4 (Paper+Live) - Complete
 
 **Last Updated**: 2026-04-07
 
@@ -12,55 +12,53 @@
 | Phase 1: Ingest | **Complete** | ORM モデル, API エンドポイント, ソースレジストリ, 取込サービス |
 | Phase 2: Forecast | **Complete** | Worker Adapter, Forecast/Decision サービス, Dossier/Overlay API |
 | Phase 3: Manual+Replay | **Complete** | Prompt Bridge, Replay Engine, Postmortem Judge |
-| Phase 4: Paper+Live | Not Started | ブローカーアダプター, 実行モード |
+| Phase 4: Paper+Live | **Complete** | BrokerAdapter, Order ライフサイクル, Kill Switch, Position |
 | Phase 5: Extensibility | Not Started | プラグインレジストリ, スキーマレジストリ強化 |
 
-## Phase 3 Deliverables
+## Phase 4 Deliverables
 
-### Prompt Task ライフサイクル
-- [x] 状態遷移: created → visible → submitted → parsed → accepted/rejected/expired
-- [x] create_prompt_task() - タスク作成 + Decision を waiting_manual に
-- [x] transition_task_status() - バリデーション付き状態遷移
-- [x] submit_response() - レスポンス送信
-- [x] accept_response() - 受理 + Decision を approved に戻す
+### BrokerAdapter (ADR に準拠)
+- [x] BrokerAdapter ABC (health, submit, cancel, get_order_status, get_positions)
+- [x] OrderIntent / OrderStatus / Fill / PositionInfo データクラス
+- [x] MockBrokerAdapter (paper/replay: 即時fill、in-memory position tracking)
 
-### Manual Expert Bridge
-- [x] should_escalate_to_manual() - エスカレーション判定
-- [x] トリガー: novel_event_type, high_materiality_low_confidence, large_position
+### Execution サービス
+- [x] check_kill_switch() - kill switch 検査
+- [x] submit_order() - Decision → Broker → OrderLedger + ExecutionFill
+- [x] take_position_snapshot() - ポジションスナップショット取得
 
-### Replay Engine
-- [x] create_replay_job() - リプレイジョブ作成 (JobRun)
-- [x] run_replay() - イベント一括再実行 (forecast + decision pipeline)
-- [x] MockWorkerAdapter 使用で決定的リプレイ
+### Kill Switch
+- [x] POST /v1/kill-switches/activate - kill switch 有効化
+- [x] POST /v1/kill-switches/{id}/clear - kill switch 解除
+- [x] GET /v1/kill-switches - 一覧
 
-### Postmortem / Judge
-- [x] record_outcome() - 実現リターン記録
-- [x] judge_verdict() - 予測精度判定 (correct/wrong/mixed/insufficient)
-- [x] create_postmortem() - Postmortem 生成 + failure_codes
-- [x] レビューフラグ: requires_source_review, requires_prompt_review
+### API エンドポイント (46 ルート合計, +7)
+- [x] GET /v1/orders, GET /v1/orders/{id}, GET /v1/orders/{id}/fills
+- [x] GET /v1/positions
+- [x] GET/POST /v1/kill-switches, POST /v1/kill-switches/{id}/clear
 
-### API エンドポイント (39 ルート合計, +13)
-- [x] GET/POST /v1/prompt-tasks, GET /v1/prompt-tasks/{id}
-- [x] POST /v1/prompt-tasks/{id}/make-visible
-- [x] GET/POST /v1/prompt-tasks/{id}/responses
-- [x] POST/GET /v1/replay-jobs, GET /v1/replay-jobs/{id}
-- [x] POST /v1/replay-jobs/{id}/run
-- [x] GET /v1/postmortems, GET /v1/postmortems/{id}
-- [x] GET /v1/outcomes/{forecast_id}
-
-### テスト (67/67 passed, +21)
-- [x] Prompt bridge テスト (6: エスカレーション判定)
-- [x] Postmortem judge テスト (8: verdict 判定ロジック)
-- [x] Phase 3 スキーマテスト (5: Pydantic バリデーション)
-- [x] ルートテスト更新 (39 ルート + メソッド検証)
+### テスト (87/87 passed, +20)
+- [x] Broker adapter テスト (12: submit, cancel, position, fill)
+- [x] Execution スキーマテスト (5: Pydantic バリデーション)
+- [x] ルートテスト更新 (46 ルート + メソッド検証)
 
 ## Cumulative Progress
 
 | カテゴリ | 数量 |
 |---------|------|
 | DB テーブル | 54 (7 schemas) |
-| API ルート | 39 |
-| テスト | 67 |
-| サービス | 6 (ingest, forecast, decision, prompt_bridge, replay, postmortem) |
-| Adapter | 2 (WorkerAdapter ABC, MockWorkerAdapter) |
-| コミット | 4 |
+| API ルート | 46 |
+| テスト | 87 |
+| サービス | 7 (ingest, forecast, decision, prompt_bridge, replay, postmortem, execution) |
+| Adapter | 4 (WorkerAdapter ABC, MockWorker, BrokerAdapter ABC, MockBroker) |
+| コミット | 5 |
+
+## Architecture Invariants Maintained
+
+1. **レジャー分離** ✅ - 7 separate ledger tables
+2. **市場/ソース/プロバイダ抽象化** ✅ - registry + adapter patterns
+3. **Grafana Shell + Plugin** ✅ - provisioning + overlay API
+4. **実行モード段階** ✅ - replay/shadow/paper/micro_live/live
+5. **追記指向** ✅ - append-only ledgers
+6. **LLM提案/Policy決定** ✅ - worker proposes, policy decides
+7. **Kill Switch** ✅ - global/market/strategy/source/broker scopes
