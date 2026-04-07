@@ -63,7 +63,7 @@ api-validate:  ## Validate OpenAPI spec (placeholder)
 	@echo "OpenAPI validation not yet implemented"
 
 dev:  ## Run development server
-	uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+	uvicorn backend.main:app --reload --host 0.0.0.0 --port 50000
 
 # --- Grafana ---
 plugin-build:  ## Build Grafana plugins (placeholder)

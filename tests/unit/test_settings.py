@@ -9,4 +9,4 @@ def test_default_settings():
     assert s.app_name == "Event Intelligence OS"
     assert s.app_version == "0.1.0"
     assert s.execution_mode == "replay"
-    assert s.port == 8000
+    assert s.port == 50000

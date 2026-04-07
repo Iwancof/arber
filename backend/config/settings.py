@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     # Database
-    database_url: str = "postgresql+asyncpg://event_os:event_os_dev@localhost:5432/event_os"
+    database_url: str = "postgresql+asyncpg://event_os:event_os_dev@localhost:50002/event_os"
     database_echo: bool = False
 
     # Redis
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Server
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 50000
 
     # Auth
     auth_disabled: bool = True

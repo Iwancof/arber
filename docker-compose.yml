@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "50002:5432"
     environment:
       POSTGRES_DB: event_os
       POSTGRES_USER: event_os
@@ -33,7 +33,7 @@ services:
   grafana:
     image: grafana/grafana:11.4.0
     ports:
-      - "3000:3000"
+      - "50001:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: eventintelligence-app,eventintelligence-overlay-panel
