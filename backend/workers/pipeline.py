@@ -173,6 +173,47 @@ class PipelineWorker:
                     )
                     stats["errors"] += 1
 
+        # Exit engine: check time and stop exits
+        if settings.execution_mode == "paper":
+            try:
+                from backend.adapters.broker.registry import (
+                    get_broker_adapter,
+                )
+                from backend.core.execution_mode import (
+                    ExecutionMode,
+                )
+                from backend.services.exit_engine import (
+                    check_stop_exits,
+                    check_time_exits,
+                )
+                broker = get_broker_adapter(
+                    ExecutionMode.PAPER
+                )
+                async with (
+                    async_session_factory() as exit_db
+                ):
+                    time_exits = (
+                        await check_time_exits(
+                            exit_db, broker
+                        )
+                    )
+                    stop_exits = (
+                        await check_stop_exits(
+                            exit_db, broker
+                        )
+                    )
+                    if time_exits or stop_exits:
+                        logger.info(
+                            "Exits: time=%d "
+                            "stop=%d",
+                            time_exits,
+                            stop_exits,
+                        )
+            except Exception:
+                logger.exception(
+                    "Exit engine error"
+                )
+
         logger.info(
             "Pipeline cycle done: %s", stats
         )
@@ -207,7 +248,7 @@ class PipelineWorker:
         )
         stats["forecasted"] += 1
 
-        await evaluate_forecast(
+        decision = await evaluate_forecast(
             db,
             forecast_id=forecast.forecast_id,
             execution_mode=(
@@ -215,6 +256,41 @@ class PipelineWorker:
             ),
         )
         stats["decided"] += 1
+
+        if (
+            decision.action == "long_candidate"
+            and settings.execution_mode == "paper"
+        ):
+            from backend.adapters.broker.registry import (
+                get_broker_adapter,
+            )
+            from backend.core.execution_mode import (
+                ExecutionMode,
+            )
+            from backend.services.execution import (
+                submit_order,
+            )
+            try:
+                broker = get_broker_adapter(
+                    ExecutionMode.PAPER
+                )
+                await submit_order(
+                    db,
+                    broker,
+                    decision_id=(
+                        decision.decision_id
+                    ),
+                    execution_mode="paper",
+                )
+                stats.setdefault("ordered", 0)
+                stats["ordered"] = (
+                    stats.get("ordered", 0) + 1
+                )
+            except Exception:
+                logger.exception(
+                    "Order submission failed"
+                )
+                stats["errors"] += 1
 
     async def run_loop(self) -> None:
         """Run the pipeline continuously."""

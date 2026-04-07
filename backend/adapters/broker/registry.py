@@ -12,7 +12,10 @@ from backend.core.execution_mode import ExecutionMode
 _MODE_ADAPTER_MAP: dict[ExecutionMode, list[str]] = {
     ExecutionMode.REPLAY: ["mock_paper_v1", "replay_v1"],
     ExecutionMode.SHADOW: ["mock_paper_v1", "shadow_v1"],
-    ExecutionMode.PAPER: ["mock_paper_v1"],
+    ExecutionMode.PAPER: [
+        "mock_paper_v1",
+        "alpaca_paper_v1",
+    ],
     ExecutionMode.MICRO_LIVE: [],  # Future: live adapters
     ExecutionMode.LIVE: [],  # Future: live adapters
 }
@@ -27,6 +30,12 @@ def get_broker_adapter(mode: ExecutionMode) -> BrokerAdapter:
         return MockBrokerAdapter()
 
     if mode == ExecutionMode.PAPER:
+        from backend.config.settings import settings
+        if settings.alpaca_api_key:
+            from backend.adapters.broker.alpaca_broker import (
+                AlpacaPaperBrokerAdapter,
+            )
+            return AlpacaPaperBrokerAdapter()
         return MockBrokerAdapter()
 
     if mode in (ExecutionMode.MICRO_LIVE, ExecutionMode.LIVE):
