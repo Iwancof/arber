@@ -173,6 +173,33 @@ class PipelineWorker:
                     )
                     stats["errors"] += 1
 
+        # Outcome builder: check matured forecasts
+        try:
+            from backend.services.outcome_builder import (
+                check_matured_forecasts,
+                update_reliability_stats,
+            )
+            async with (
+                async_session_factory() as outcome_db
+            ):
+                outcomes = (
+                    await check_matured_forecasts(
+                        outcome_db
+                    )
+                )
+                if outcomes:
+                    await update_reliability_stats(
+                        outcome_db
+                    )
+                    logger.info(
+                        "Outcomes built: %d",
+                        outcomes,
+                    )
+        except Exception:
+            logger.exception(
+                "Outcome builder error"
+            )
+
         # Exit engine: check time and stop exits
         if settings.execution_mode == "paper":
             try:
@@ -291,6 +318,20 @@ class PipelineWorker:
                     "Order submission failed"
                 )
                 stats["errors"] += 1
+
+        # Inquiry signal evaluation
+        try:
+            from backend.services.inquiry_signal import (
+                evaluate_decision_signals,
+            )
+            sigs = await evaluate_decision_signals(
+                db, decision_id=decision.decision_id,
+            )
+            if sigs:
+                stats.setdefault("signals", 0)
+                stats["signals"] += len(sigs)
+        except Exception:
+            logger.exception("Signal evaluation failed")
 
     async def run_loop(self) -> None:
         """Run the pipeline continuously."""
