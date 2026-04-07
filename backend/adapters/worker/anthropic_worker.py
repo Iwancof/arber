@@ -138,12 +138,15 @@ def _build_system_message(task: WorkerTask) -> str:
     if task.task_type == "single_name_forecast":
         return (
             f"{base}\n"
-            "Generate a forecast based on the event. "
-            "Include hypotheses, counterarguments, "
-            "confidence, and horizon predictions. "
-            "Never give a single point price prediction."
-            " Focus on relative performance vs "
-            "benchmark."
+            "Generate a forecast for the given "
+            "instrument based on the event.\n"
+            "You MUST use EXACTLY the JSON schema "
+            "shown in the user message.\n"
+            "Every field listed is REQUIRED.\n"
+            "Do NOT invent your own field names.\n"
+            "Do NOT add fields not in the schema.\n"
+            "Focus on relative performance vs "
+            "benchmark, never point price."
         )
     return base
 
@@ -188,42 +191,65 @@ def _build_prompt(task: WorkerTask) -> str:
         direction = payload.get(
             "direction_hint", "unknown"
         )
+        ej = json.dumps(event_json, default=str)
         return (
-            f"Forecast for {symbol} based on event.\n\n"
+            f"Forecast for {symbol} based on this "
+            f"event.\n\n"
             f"Event type: {event_type}\n"
             f"Direction hint: {direction}\n"
-            f"Event data: {json.dumps(event_json)}\n\n"
-            "Respond with JSON:\n"
+            f"Event data: {ej}\n\n"
+            "Respond with EXACTLY this JSON structure "
+            "(fill in real values):\n\n"
+            "```json\n"
             "{\n"
-            '  "schema_name": "forecast",\n'
-            '  "schema_version": "1.0.0",\n'
             '  "hypotheses": [\n'
-            '    {"code": "<name>", "weight": <0-1>, '
-            '"description": "<text>"}\n'
+            "    {\n"
+            '      "code": "hypothesis_name",\n'
+            '      "weight": 0.6,\n'
+            '      "description": "why this matters"\n'
+            "    }\n"
             "  ],\n"
-            '  "selected_hypothesis": "<code>",\n'
-            '  "rejected_hypotheses": ["<code>"],\n'
+            '  "selected_hypothesis": '
+            '"hypothesis_name",\n'
+            '  "rejected_hypotheses": '
+            '["other_hypothesis"],\n'
             '  "counterarguments": [\n'
-            '    {"code": "<name>", "severity": '
-            '"low|medium|high"}\n'
+            "    {\n"
+            '      "code": "risk_name",\n'
+            '      "severity": "medium"\n'
+            "    }\n"
             "  ],\n"
             '  "risk_flags": [],\n'
             '  "evidence_refs": [],\n'
-            '  "confidence_before": <0-1>,\n'
-            '  "confidence_after": <0-1>,\n'
-            '  "direction_hint": '
-            '"positive|negative|neutral|mixed",\n'
+            '  "confidence_before": 0.5,\n'
+            '  "confidence_after": 0.65,\n'
+            '  "direction_hint": "positive",\n'
             '  "horizons": {\n'
             '    "1d": {\n'
-            '      "p_outperform": <0-1>,\n'
-            '      "p_underperform": <0-1>,\n'
-            '      "ret_q10": <decimal>,\n'
-            '      "ret_q50": <decimal>,\n'
-            '      "ret_q90": <decimal>\n'
+            '      "p_outperform": 0.58,\n'
+            '      "p_underperform": 0.42,\n'
+            '      "ret_q10": -0.015,\n'
+            '      "ret_q50": 0.005,\n'
+            '      "ret_q90": 0.025\n'
             "    },\n"
-            '    "5d": { ... }\n'
+            '    "5d": {\n'
+            '      "p_outperform": 0.55,\n'
+            '      "p_underperform": 0.45,\n'
+            '      "ret_q10": -0.03,\n'
+            '      "ret_q50": 0.008,\n'
+            '      "ret_q90": 0.04\n'
+            "    }\n"
             "  }\n"
-            "}"
+            "}\n"
+            "```\n\n"
+            "RULES:\n"
+            "- Use ONLY these exact field names\n"
+            "- hypotheses: at least 2\n"
+            "- horizons: must include 1d and 5d\n"
+            "- All numbers must be actual values\n"
+            "- p_outperform + p_underperform = 1.0\n"
+            "- confidence_after between 0 and 1\n"
+            "- Return raw JSON only, no markdown"
         )
 
     # Generic fallback

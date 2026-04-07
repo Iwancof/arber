@@ -93,7 +93,7 @@ async def run_forecast_pipeline(
     instrument = instrument_result.scalar_one()
 
     task = WorkerTask(
-        task_type="event_forecast",
+        task_type="single_name_forecast",
         schema_name="forecast",
         schema_version="1.0.0",
         prompt_template_id=prompt_template_id,
