@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkerTask",
+  "type": "object",
+  "required": [
+    "task_type",
+    "schema_name",
+    "schema_version",
+    "prompt_template_id",
+    "input_payload"
+  ],
+  "properties": {
+    "task_type": {
+      "type": "string"
+    },
+    "schema_name": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "prompt_template_id": {
+      "type": "string"
+    },
+    "prompt_version": {
+      "type": "string"
+    },
+    "input_payload": {
+      "type": "object"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "timeout_sec": {
+      "type": "integer"
+    },
+    "mode": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

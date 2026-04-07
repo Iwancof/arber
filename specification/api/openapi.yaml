@@ -1,0 +1,539 @@
+openapi: 3.1.0
+info:
+  title: Event Intelligence OS Operator API
+  version: 1.0.0
+  description: Representative public/internal API contracts for operator and control
+    plane.
+servers:
+- url: https://event-os.internal
+paths:
+  /v1/markets:
+    get:
+      summary: List market profiles
+      responses:
+        '200':
+          description: OK
+  /v1/instruments:
+    get:
+      summary: Search instruments
+      parameters:
+      - name: market_code
+        in: query
+        schema:
+          type: string
+      - name: symbol
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+  /v1/events:
+    get:
+      summary: List events
+      parameters:
+      - name: instrument_id
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: event_type
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+  /v1/events/{eventId}:
+    get:
+      summary: Get event details
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /v1/decisions/{decisionId}:
+    get:
+      summary: Get decision dossier aggregate
+      parameters:
+      - name: decisionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Decision dossier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DecisionDossier'
+  /v1/prompt-tasks:
+    get:
+      summary: List prompt tasks
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create prompt task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptTask'
+      responses:
+        '202':
+          description: Accepted
+  /v1/prompt-tasks/{taskId}/responses:
+    post:
+      summary: Submit prompt response
+      parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptResponse'
+      responses:
+        '202':
+          description: Accepted
+        '422':
+          description: Schema invalid
+  /v1/source-candidates:
+    get:
+      summary: List source candidates
+      responses:
+        '200':
+          description: OK
+  /v1/source-candidates/{candidateId}/approve-provisional:
+    post:
+      summary: Approve source candidate into provisional state
+      parameters:
+      - name: candidateId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '202':
+          description: Accepted
+  /v1/source-candidates/{candidateId}/promote:
+    post:
+      summary: Promote source candidate to production
+      parameters:
+      - name: candidateId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '202':
+          description: Accepted
+  /v1/replay-jobs:
+    post:
+      summary: Launch replay job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                market_code:
+                  type: string
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+      responses:
+        '202':
+          description: Accepted
+  /v1/plugins:
+    get:
+      summary: List plugins
+      responses:
+        '200':
+          description: OK
+  /v1/plugins/{pluginCode}/enable:
+    post:
+      summary: Enable plugin
+      parameters:
+      - name: pluginCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '202':
+          description: Accepted
+  /v1/overlays/{instrumentId}:
+    get:
+      summary: Get overlay data for chart panel
+      parameters:
+      - name: instrumentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: from
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: to
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: horizon
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverlayPayload'
+components:
+  schemas:
+    PromptTask:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: PromptTask
+      type: object
+      required:
+      - schema_name
+      - schema_version
+      - task_type
+      - deadline_utc
+      - question
+      - required_output_schema
+      properties:
+        schema_name:
+          const: prompt_task
+        schema_version:
+          type: string
+        task_type:
+          type: string
+        deadline_utc:
+          type: string
+          format: date-time
+        question:
+          type: string
+        evidence_bundle:
+          type: array
+          items:
+            type: object
+        required_output_schema:
+          type: object
+      additionalProperties: true
+    PromptResponse:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: PromptResponse
+      type: object
+      required:
+      - schema_name
+      - schema_version
+      - task_id
+      - model_name
+      - submitted_at
+      - parsed_json
+      properties:
+        schema_name:
+          const: prompt_response
+        schema_version:
+          type: string
+        task_id:
+          type: string
+        model_name:
+          type: string
+        submitted_at:
+          type: string
+          format: date-time
+        raw_response:
+          type: string
+        parsed_json:
+          type: object
+        schema_valid:
+          type: boolean
+      additionalProperties: true
+    OverlayPayload:
+      type: object
+      properties:
+        bars:
+          type: array
+          items:
+            type: object
+        forecast_bands:
+          type: array
+          items:
+            type: object
+        annotations:
+          type: array
+          items:
+            type: object
+        decision_intervals:
+          type: array
+          items:
+            type: object
+        position_intervals:
+          type: array
+          items:
+            type: object
+    DecisionDossier:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/Decision'
+        forecast:
+          $ref: '#/components/schemas/Forecast'
+        event:
+          $ref: '#/components/schemas/EventRecord'
+        reasoning_trace:
+          $ref: '#/components/schemas/ReasoningTrace'
+        prompt_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromptTask'
+        orders:
+          type: array
+          items:
+            type: object
+        outcomes:
+          type: array
+          items:
+            type: object
+    EventRecord:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: EventRecord
+      type: object
+      required:
+      - schema_name
+      - schema_version
+      - event_type
+      - affected_assets
+      - source_refs
+      properties:
+        schema_name:
+          const: event_record
+        schema_version:
+          type: string
+        event_type:
+          type: string
+        issuer_symbol:
+          type:
+          - string
+          - 'null'
+        affected_assets:
+          type: array
+          items:
+            type: string
+        direction_hint:
+          type: string
+          enum:
+          - positive
+          - negative
+          - neutral
+          - mixed
+          - unknown
+        materiality:
+          type: number
+          minimum: 0
+          maximum: 1
+        novelty:
+          type: number
+          minimum: 0
+          maximum: 1
+        event_time:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        source_refs:
+          type: array
+          items:
+            type: string
+        evidence_spans:
+          type: array
+          items:
+            type: object
+      additionalProperties: true
+    Forecast:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: Forecast
+      type: object
+      required:
+      - schema_name
+      - schema_version
+      - instrument
+      - benchmark
+      - horizon
+      - confidence
+      properties:
+        schema_name:
+          const: forecast
+        schema_version:
+          type: string
+        instrument:
+          type: string
+        benchmark:
+          type: string
+        horizon:
+          type: string
+        p_outperform_benchmark:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_underperform_benchmark:
+          type: number
+          minimum: 0
+          maximum: 1
+        p_downside_barrier:
+          type: number
+          minimum: 0
+          maximum: 1
+        ret_q10:
+          type:
+          - number
+          - 'null'
+        ret_q50:
+          type:
+          - number
+          - 'null'
+        ret_q90:
+          type:
+          - number
+          - 'null'
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        reason_codes:
+          type: array
+          items:
+            type: string
+      additionalProperties: true
+    Decision:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: Decision
+      type: object
+      required:
+      - schema_name
+      - schema_version
+      - decision_status
+      - action
+      - score
+      properties:
+        schema_name:
+          const: decision
+        schema_version:
+          type: string
+        decision_status:
+          type: string
+          enum:
+          - created
+          - awaiting_manual
+          - accepted
+          - proposed
+          - no_trade
+          - executed
+          - expired
+          - errored
+        action:
+          type: string
+          enum:
+          - buy
+          - sell
+          - hold
+          - watch
+          - no_trade
+        score:
+          type: number
+        reason_codes:
+          type: array
+          items:
+            type: string
+        risk_gates:
+          type: array
+          items:
+            type: string
+        size_cap:
+          type:
+          - number
+          - 'null'
+      additionalProperties: true
+    ReasoningTrace:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: ReasoningTrace
+      type: object
+      required:
+      - schema_name
+      - schema_version
+      - hypotheses
+      - selected_hypothesis
+      properties:
+        schema_name:
+          const: reasoning_trace
+        schema_version:
+          type: string
+        hypotheses:
+          type: array
+          items:
+            type: object
+            required:
+            - code
+            properties:
+              code:
+                type: string
+              weight:
+                type: number
+        selected_hypothesis:
+          type: string
+        rejected_hypotheses:
+          type: array
+          items:
+            type: string
+        counterarguments:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              severity:
+                type: string
+        risk_flags:
+          type: array
+          items:
+            type: string
+        evidence_refs:
+          type: array
+          items:
+            type: string
+        confidence_before:
+          type: number
+          minimum: 0
+          maximum: 1
+        confidence_after:
+          type: number
+          minimum: 0
+          maximum: 1
+      additionalProperties: true

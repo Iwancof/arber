@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.whl
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+
+# Node
+node_modules/
+
+# Grafana
+.grafana/
+
+# Docker volumes
+pgdata/
+redisdata/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.bak

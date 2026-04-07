@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Decision",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "decision_status",
+    "action",
+    "score"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "decision"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "decision_status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "awaiting_manual",
+        "accepted",
+        "proposed",
+        "no_trade",
+        "executed",
+        "expired",
+        "errored"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "buy",
+        "sell",
+        "hold",
+        "watch",
+        "no_trade"
+      ]
+    },
+    "score": {
+      "type": "number"
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "risk_gates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "size_cap": {
+      "type": [
+        "number",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

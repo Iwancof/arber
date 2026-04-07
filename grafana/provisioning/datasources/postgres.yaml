@@ -1,0 +1,16 @@
+apiVersion: 1
+datasources:
+  - name: Event Intelligence OS
+    type: postgres
+    url: postgres:5432
+    database: event_os
+    user: event_os
+    secureJsonData:
+      password: event_os_dev
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 10
+      postgresVersion: 1600
+      timescaledb: false
+    isDefault: true
+    editable: true

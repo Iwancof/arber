@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MarketProfile",
+  "type": "object",
+  "required": [
+    "market_code",
+    "asset_class",
+    "primary_timezone",
+    "calendar_code",
+    "session_template"
+  ],
+  "properties": {
+    "market_code": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "asset_class": {
+      "type": "string"
+    },
+    "primary_timezone": {
+      "type": "string"
+    },
+    "quote_currency": {
+      "type": "string"
+    },
+    "calendar_code": {
+      "type": "string"
+    },
+    "session_template": {
+      "type": "object"
+    },
+    "default_horizons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "default_language_priority": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

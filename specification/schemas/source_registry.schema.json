@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SourceRegistry",
+  "type": "object",
+  "required": [
+    "source_code",
+    "display_name",
+    "source_type",
+    "adapter_type",
+    "trust_tier",
+    "status"
+  ],
+  "properties": {
+    "source_code": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "source_type": {
+      "type": "string"
+    },
+    "adapter_type": {
+      "type": "string"
+    },
+    "trust_tier": {
+      "type": "string"
+    },
+    "markets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "coverage_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

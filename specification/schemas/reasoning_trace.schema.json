@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReasoningTrace",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "hypotheses",
+    "selected_hypothesis"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "reasoning_trace"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "selected_hypothesis": {
+      "type": "string"
+    },
+    "rejected_hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "counterarguments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "risk_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence_before": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "confidence_after": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": true
+}

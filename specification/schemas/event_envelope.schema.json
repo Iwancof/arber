@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EventEnvelope",
+  "type": "object",
+  "required": [
+    "event_id",
+    "event_name",
+    "event_version",
+    "emitted_at",
+    "schema_name",
+    "schema_version",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "event_name": {
+      "type": "string"
+    },
+    "event_version": {
+      "type": "string"
+    },
+    "emitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "producer": {
+      "type": "string"
+    },
+    "trace_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "partition_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schema_name": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

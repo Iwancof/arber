@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MigrationManifest",
+  "type": "object",
+  "required": [
+    "migration_id",
+    "target_component",
+    "from_version",
+    "to_version",
+    "breaking"
+  ],
+  "properties": {
+    "migration_id": {
+      "type": "string"
+    },
+    "target_component": {
+      "type": "string"
+    },
+    "from_version": {
+      "type": "string"
+    },
+    "to_version": {
+      "type": "string"
+    },
+    "breaking": {
+      "type": "boolean"
+    },
+    "rollout_plan": {
+      "type": "string"
+    },
+    "rollback_plan": {
+      "type": "string"
+    },
+    "validation_queries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

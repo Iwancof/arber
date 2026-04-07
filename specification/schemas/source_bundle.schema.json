@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SourceBundle",
+  "type": "object",
+  "required": [
+    "bundle_code",
+    "bundle_scope"
+  ],
+  "properties": {
+    "bundle_code": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "bundle_scope": {
+      "type": "string"
+    },
+    "market_code": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

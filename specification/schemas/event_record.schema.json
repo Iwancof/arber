@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EventRecord",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "event_type",
+    "affected_assets",
+    "source_refs"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "event_record"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string"
+    },
+    "issuer_symbol": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "affected_assets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "direction_hint": {
+      "type": "string",
+      "enum": [
+        "positive",
+        "negative",
+        "neutral",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "materiality": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "novelty": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "event_time": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_spans": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

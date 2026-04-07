@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PromptTask",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "task_type",
+    "deadline_utc",
+    "question",
+    "required_output_schema"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "prompt_task"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "task_type": {
+      "type": "string"
+    },
+    "deadline_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "question": {
+      "type": "string"
+    },
+    "evidence_bundle": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "required_output_schema": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forecast",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "instrument",
+    "benchmark",
+    "horizon",
+    "confidence"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "forecast"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "instrument": {
+      "type": "string"
+    },
+    "benchmark": {
+      "type": "string"
+    },
+    "horizon": {
+      "type": "string"
+    },
+    "p_outperform_benchmark": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "p_underperform_benchmark": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "p_downside_barrier": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "ret_q10": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ret_q50": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ret_q90": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}
