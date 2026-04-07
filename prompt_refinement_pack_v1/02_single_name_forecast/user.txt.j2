@@ -1,0 +1,71 @@
+<task>
+Generate a relative-performance forecast for one U.S. equity based on one event.
+</task>
+
+<instrument>{{ symbol }}</instrument>
+<benchmark>{{ benchmark_symbol | default("SPY") }}</benchmark>
+
+<event_summary>
+  <event_type>{{ event_type }}</event_type>
+  <direction_hint>{{ direction_hint }}</direction_hint>
+</event_summary>
+
+<event_json>{{ event_json }}</event_json>
+
+<output_schema>
+{
+  "hypotheses": [
+    {
+      "code": "earnings_path_repricing",
+      "weight": 0.65,
+      "description": "event changes expected earnings path relative to the benchmark"
+    },
+    {
+      "code": "already_priced_mean_reversion",
+      "weight": 0.35,
+      "description": "headline is real but much of the effect may already be priced"
+    }
+  ],
+  "selected_hypothesis": "earnings_path_repricing",
+  "rejected_hypotheses": ["already_priced_mean_reversion"],
+  "counterarguments": [
+    {
+      "code": "already_priced",
+      "severity": "medium"
+    }
+  ],
+  "risk_flags": [],
+  "evidence_refs": ["evidence_spans[0]"],
+  "confidence_before": 0.66,
+  "confidence_after": 0.61,
+  "direction_hint": "positive",
+  "horizons": {
+    "1d": {
+      "p_outperform": 0.61,
+      "p_underperform": 0.39,
+      "ret_q10": -0.010,
+      "ret_q50": 0.006,
+      "ret_q90": 0.021
+    },
+    "5d": {
+      "p_outperform": 0.58,
+      "p_underperform": 0.42,
+      "ret_q10": -0.018,
+      "ret_q50": 0.009,
+      "ret_q90": 0.032
+    }
+  }
+}
+</output_schema>
+
+<rules>
+- Use EXACTLY the field names shown above.
+- Include at least 2 hypotheses.
+- Hypothesis weights should sum to 1.0.
+- `selected_hypothesis` must match one hypothesis code.
+- `rejected_hypotheses` should contain the unused plausible alternatives.
+- `p_outperform + p_underperform = 1.0` for each horizon.
+- Use 1d and 5d horizons only.
+- If the event does not imply a real relative edge, set `confidence_after` to 0.50-0.52 and keep horizon probabilities close to 0.50.
+- Output raw JSON only.
+</rules>

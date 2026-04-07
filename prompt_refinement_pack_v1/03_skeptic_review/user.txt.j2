@@ -1,0 +1,39 @@
+<task>
+Critically review this forecast and identify the strongest reasons it could fail.
+</task>
+
+<symbol>{{ symbol }}</symbol>
+{% if benchmark_symbol is defined %}
+<benchmark>{{ benchmark_symbol }}</benchmark>
+{% endif %}
+
+{% if event_json is defined %}
+<event_json>{{ event_json }}</event_json>
+{% endif %}
+
+<forecast_json>{{ forecast_json }}</forecast_json>
+
+<output_schema>
+{
+  "overall_assessment": "partially_agree",
+  "confidence_adjustment": -0.05,
+  "counterarguments": [
+    {
+      "code": "already_priced",
+      "severity": "medium",
+      "description": "part of the headline impact may already be reflected in positioning or immediate repricing"
+    }
+  ],
+  "missing_evidence": ["no primary-source detail on magnitude"],
+  "alternative_hypothesis": "benchmark_shared_exposure",
+  "recommendation": "reduce_size"
+}
+</output_schema>
+
+<rules>
+- `confidence_adjustment` must be 0 or negative.
+- Return 1 to 4 counterarguments.
+- `alternative_hypothesis` should be a plausible non-selected explanation, not a generic sentence.
+- Keep missing_evidence concrete and concise.
+- Output raw JSON only.
+</rules>

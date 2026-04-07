@@ -1,0 +1,31 @@
+<task>
+Evaluate this forecast against the realized relative return.
+</task>
+
+<symbol>{{ symbol }}</symbol>
+<horizon>{{ horizon_code }}</horizon>
+<realized_rel_return>{{ realized_rel_return }}</realized_rel_return>
+
+<forecast_json>{{ forecast_json }}</forecast_json>
+
+<output_schema>
+{
+  "verdict": "mixed",
+  "direction_correct": true,
+  "magnitude_assessment": "underestimated",
+  "failure_codes": ["magnitude_underestimated"],
+  "lessons_learned": [
+    "allow a wider upside tail for hard catalysts with direct earnings-path impact"
+  ],
+  "source_quality_note": "evidence quality was adequate but not complete",
+  "prompt_quality_note": "the prompt was well framed for direction but under-specified for magnitude persistence"
+}
+</output_schema>
+
+<rules>
+- Use only the verdict values: correct, wrong, mixed, insufficient.
+- Use only the magnitude_assessment values: underestimated, accurate, overestimated.
+- Provide 0 to 3 failure_codes.
+- lessons_learned must be actionable.
+- Output raw JSON only.
+</rules>

@@ -8,9 +8,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from jinja2 import BaseLoader, Environment
+from jinja2 import BaseLoader, Environment, Undefined
 
-PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
+PROMPTS_DIR = (
+    Path(__file__).resolve().parent.parent.parent / "prompts"
+)
+
+# Active prompt version. Change this to switch all prompts.
+ACTIVE_VERSION = "v2"
 
 
 @dataclass(frozen=True)
@@ -26,9 +31,23 @@ class PromptTemplate:
         env = Environment(
             loader=_StringLoader(self.user_template),
             autoescape=False,
+            undefined=_SilentUndefined,
         )
         tmpl = env.get_template("user")
         return tmpl.render(**kwargs)
+
+
+class _SilentUndefined(Undefined):
+    """Undefined that renders as empty string."""
+
+    def __str__(self) -> str:
+        return ""
+
+    def __iter__(self) -> Any:
+        return iter([])
+
+    def __bool__(self) -> bool:
+        return False
 
 
 class _StringLoader(BaseLoader):
@@ -47,23 +66,26 @@ class _StringLoader(BaseLoader):
 
 def load_template(
     task_type: str,
-    version: str = "v1",
+    version: str | None = None,
 ) -> PromptTemplate | None:
     """Load a prompt template from disk.
 
-    Looks for prompts/{version}/{task_type}/system.txt
-    and prompts/{version}/{task_type}/user.txt.j2
+    Falls back to v1 if v2 doesn't have the template.
     """
-    base = PROMPTS_DIR / version / task_type
+    ver = version or ACTIVE_VERSION
+    base = PROMPTS_DIR / ver / task_type
     system_path = base / "system.txt"
     user_path = base / "user.txt.j2"
 
     if not system_path.exists() or not user_path.exists():
+        # Fallback to v1
+        if ver != "v1":
+            return load_template(task_type, version="v1")
         return None
 
     return PromptTemplate(
         task_type=task_type,
-        version=version,
+        version=ver,
         system_text=system_path.read_text().strip(),
         user_template=user_path.read_text(),
     )
@@ -74,12 +96,14 @@ TEMPLATES: dict[str, PromptTemplate] = {}
 
 
 def _init_templates() -> None:
-    """Load all v1 templates on import."""
+    """Load all templates on import."""
     for task_type in [
         "event_extract",
         "single_name_forecast",
         "skeptic_review",
         "judge_postmortem",
+        "noise_classifier",
+        "inquiry_question_generator",
     ]:
         tmpl = load_template(task_type)
         if tmpl:

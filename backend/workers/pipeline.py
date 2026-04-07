@@ -61,6 +61,7 @@ class PipelineWorker:
         stats: dict[str, int] = {
             "fetched": 0,
             "ingested": 0,
+            "noise_filtered": 0,
             "extracted": 0,
             "forecasted": 0,
             "decided": 0,
@@ -132,8 +133,29 @@ class PipelineWorker:
                     )
                     stats["errors"] += 1
 
-            # Step 3: Extract events via LLM
+            # Step 2.5: Noise gate (headline filter)
+            signal_docs: list[RawDocument] = []
             for doc in docs:
+                try:
+                    is_signal = await self._noise_gate(
+                        doc
+                    )
+                    if is_signal:
+                        signal_docs.append(doc)
+                    else:
+                        stats["noise_filtered"] += 1
+                except Exception:
+                    # On error, let it through
+                    signal_docs.append(doc)
+
+            logger.info(
+                "Noise gate: %d signal, %d noise",
+                len(signal_docs),
+                stats["noise_filtered"],
+            )
+
+            # Step 3: Extract events via LLM
+            for doc in signal_docs:
                 try:
                     event = (
                         await self._extract_event(
@@ -312,7 +334,7 @@ class PipelineWorker:
             ),
             materiality=ev.get("materiality"),
             novelty=ev.get("novelty"),
-            extraction_version="anthropic_v1",
+            extraction_version="anthropic_v2",
             schema_version="1.0.0",
             event_json=ev,
         )
@@ -320,6 +342,45 @@ class PipelineWorker:
         await db.commit()
         await db.refresh(event)
         return event
+
+    async def _noise_gate(
+        self, doc: RawDocument
+    ) -> bool:
+        """Classify headline as signal or noise.
+
+        Returns True if the doc should be processed.
+        """
+        from backend.adapters.worker.base import (
+            WorkerTask,
+        )
+
+        task = WorkerTask(
+            task_type="noise_classifier",
+            schema_name="noise_classification",
+            schema_version="1.0.0",
+            input_payload={
+                "headline": doc.headline or "",
+            },
+            mode=settings.execution_mode,
+        )
+
+        result = await self._worker.execute(task)
+        if not result.schema_valid:
+            return True  # On failure, let it through
+
+        classification = result.parsed_json.get(
+            "classification", "uncertain"
+        )
+
+        if classification == "noise":
+            logger.info(
+                "Noise filtered: %s",
+                (doc.headline or "")[:60],
+            )
+            return False
+
+        # signal or uncertain → process
+        return True
 
     async def _resolve_instrument(
         self,

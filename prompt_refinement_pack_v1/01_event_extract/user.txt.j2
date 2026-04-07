@@ -1,0 +1,46 @@
+<task>
+Extract structured market events from one document.
+</task>
+
+{% if source_name is defined %}
+<source_name>{{ source_name }}</source_name>
+{% endif %}
+
+{% if symbols is defined %}
+<source_symbols>{{ symbols }}</source_symbols>
+{% endif %}
+
+<document>
+  <headline>{{ headline }}</headline>
+  <body>{{ raw_text }}</body>
+</document>
+
+<output_schema>
+{
+  "schema_name": "event_record",
+  "schema_version": "1.0.0",
+  "events": [
+    {
+      "event_type": "corp_earnings_beat",
+      "affected_assets": ["AAPL"],
+      "direction_hint": "positive",
+      "materiality": 0.72,
+      "novelty": 0.66,
+      "evidence_spans": [
+        {"text": "exact quote from the document", "start": 0, "end": 42}
+      ]
+    }
+  ]
+}
+</output_schema>
+
+<rules>
+- Return EXACTLY one JSON object with keys schema_name, schema_version, events.
+- events may be an empty array if the document is noise or contains no concrete tradable event.
+- Use only valid taxonomy labels from the system prompt.
+- Use at most 2 events.
+- If 2 events are returned, order them by market importance.
+- evidence_spans.text must be copied verbatim from the headline/body.
+- start/end are character offsets within the combined headline+body text; approximate offsets are acceptable if directionally correct, but do not omit them.
+- Do not include any prose outside the JSON.
+</rules>

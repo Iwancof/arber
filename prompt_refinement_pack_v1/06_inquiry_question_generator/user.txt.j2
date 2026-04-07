@@ -1,0 +1,40 @@
+<task>
+Generate one operator question for Human Inquiry Orchestration.
+</task>
+
+<inquiry_kind>{{ inquiry_kind }}</inquiry_kind>
+<decision_action>{{ decision_action }}</decision_action>
+
+<event_json>{{ event_json }}</event_json>
+<forecast_json>{{ forecast_json }}</forecast_json>
+
+{% if evidence_bundle is defined %}
+<evidence_bundle>{{ evidence_bundle }}</evidence_bundle>
+{% endif %}
+
+<output_schema>
+{
+  "question_title": "Review trade candidate for AAPL",
+  "question_text": "The system sees a potentially tradable event but confidence is near a policy threshold. Using only the supplied evidence and forecast, decide whether this candidate should proceed, be rejected, or be held for more information.",
+  "required_output_schema": {
+    "decision": "approve|reject|wait|need_more_info",
+    "reason_codes": ["bounded_evidence_only"],
+    "notes": "short rationale"
+  },
+  "acceptance_rules": [
+    "Use only the supplied evidence and system context",
+    "Do not rely on external browsing or unstated assumptions",
+    "If the evidence is insufficient, return need_more_info"
+  ],
+  "sla_class": "fast"
+}
+</output_schema>
+
+<rules>
+- `question_title` should be concise.
+- `question_text` should be specific and answerable.
+- `required_output_schema` must fit the inquiry kind.
+- `acceptance_rules` must explicitly enforce bounded evidence.
+- `sla_class` must be one of: fast, normal, slow.
+- Output raw JSON only.
+</rules>

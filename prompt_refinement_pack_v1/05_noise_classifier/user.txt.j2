@@ -1,0 +1,23 @@
+<task>
+Classify this headline as signal, noise, or uncertain.
+</task>
+
+<headline>{{ headline }}</headline>
+{% if symbols is defined %}
+<symbols>{{ symbols }}</symbols>
+{% endif %}
+
+<output_schema>
+{
+  "classification": "uncertain",
+  "confidence": 0.62,
+  "reason": "headline hints at a possible catalyst but does not clearly state the new fact"
+}
+</output_schema>
+
+<rules>
+- classification must be one of: signal, noise, uncertain
+- confidence must be between 0 and 1
+- reason must be concise and specific
+- Output raw JSON only
+</rules>

@@ -53,6 +53,8 @@ class AnthropicWorkerAdapter(WorkerAdapter):
             "single_name_forecast",
             "skeptic_review",
             "judge_postmortem",
+            "noise_classifier",
+            "inquiry_question_generator",
         ]
 
     async def health(self) -> bool:
