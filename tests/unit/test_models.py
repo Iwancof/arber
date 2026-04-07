@@ -37,7 +37,7 @@ def test_all_models_registered():
     assert "ops.outbox_event" in table_names
     # Extension tables
     assert "core.feature_flag" in table_names
-    assert "core.schema_registry_entry" in table_names
+    assert "core.schema_registry" in table_names
     assert "core.event_type_registry" in table_names
 
 

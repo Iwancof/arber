@@ -64,10 +64,10 @@ class SourceRegistry(Base):
     )
     source_code: Mapped[str] = mapped_column(Text, unique=True, nullable=False)
     display_name: Mapped[str] = mapped_column(Text, nullable=False)
-    source_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    adapter_type: Mapped[str | None] = mapped_column(Text, nullable=True)
-    trust_tier: Mapped[str | None] = mapped_column(Text, nullable=True)
-    latency_class: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_type: Mapped[str] = mapped_column(Text, nullable=False)
+    adapter_type: Mapped[str] = mapped_column(Text, nullable=False)
+    trust_tier: Mapped[str] = mapped_column(Text, nullable=False)
+    latency_class: Mapped[str] = mapped_column(Text, nullable=False)
     auth_requirements_json: Mapped[dict] = mapped_column(
         JSONB, server_default=text("'{}'::jsonb"), nullable=False
     )
@@ -128,7 +128,7 @@ class SourceEndpoint(Base):
     )
     endpoint_name: Mapped[str] = mapped_column(Text, nullable=False)
     endpoint_url: Mapped[str] = mapped_column(Text, nullable=False)
-    endpoint_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    endpoint_type: Mapped[str] = mapped_column(Text, nullable=False)
     auth_profile: Mapped[str | None] = mapped_column(Text, nullable=True)
     polling_interval_sec: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rate_limit_per_minute: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -166,7 +166,7 @@ class SourceBundle(Base):
         ForeignKey("core.market_profile.market_profile_id"),
         nullable=True,
     )
-    bundle_scope: Mapped[str | None] = mapped_column(Text, nullable=True)
+    bundle_scope: Mapped[str] = mapped_column(Text, nullable=False)
     applies_to_asset_class: Mapped[str | None] = mapped_column(Text, nullable=True)
     applies_to_sector: Mapped[str | None] = mapped_column(Text, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
@@ -252,7 +252,7 @@ class SourceCandidate(Base):
     proposed_source_code: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str] = mapped_column(Text, nullable=False)
     proposed_adapter_type: Mapped[str] = mapped_column(Text, nullable=False)
-    proposal_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    proposal_type: Mapped[str] = mapped_column(Text, nullable=False)
     why_now: Mapped[str] = mapped_column(Text, nullable=False)
     expected_coverage_json: Mapped[list] = mapped_column(
         JSONB, server_default=text("'[]'::jsonb"), nullable=False
@@ -267,7 +267,7 @@ class SourceCandidate(Base):
         ForeignKey("sources.source_bundle.source_bundle_id"),
         nullable=True,
     )
-    proposed_by_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    proposed_by_type: Mapped[str] = mapped_column(Text, nullable=False)
     proposed_by: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(
         Text, server_default=text("'candidate'"), nullable=False
@@ -379,7 +379,7 @@ class WatchPlan(Base):
         ForeignKey("sources.universe_set.universe_set_id"),
         nullable=True,
     )
-    execution_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
+    execution_mode: Mapped[str] = mapped_column(Text, nullable=False)
     plan_reason_codes_json: Mapped[list] = mapped_column(
         JSONB, server_default=text("'[]'::jsonb"), nullable=False
     )

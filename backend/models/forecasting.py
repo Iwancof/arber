@@ -206,8 +206,8 @@ class ForecastLedger(Base):
     confidence: Mapped[Decimal | None] = mapped_column(
         Numeric(5, 4), nullable=True
     )
-    no_trade_reason_codes_json: Mapped[dict | None] = mapped_column(
-        JSONB, nullable=True
+    no_trade_reason_codes_json: Mapped[dict] = mapped_column(
+        JSONB, server_default=text("'[]'::jsonb"), nullable=False
     )
     forecast_json: Mapped[dict] = mapped_column(
         JSONB, server_default=text("'{}'::jsonb"), nullable=False
@@ -253,10 +253,10 @@ class ForecastHorizon(Base):
         nullable=False,
     )
     horizon_code: Mapped[str] = mapped_column(Text, nullable=False)
-    p_outperform: Mapped[Decimal | None] = mapped_column(
+    p_outperform_benchmark: Mapped[Decimal | None] = mapped_column(
         Numeric(5, 4), nullable=True
     )
-    p_underperform: Mapped[Decimal | None] = mapped_column(
+    p_underperform_benchmark: Mapped[Decimal | None] = mapped_column(
         Numeric(5, 4), nullable=True
     )
     p_downside_barrier: Mapped[Decimal | None] = mapped_column(
@@ -322,7 +322,7 @@ class DecisionLedger(Base):
     action: Mapped[str] = mapped_column(Text, nullable=False)
     decision_status: Mapped[str] = mapped_column(Text, nullable=False)
     policy_version: Mapped[str] = mapped_column(Text, nullable=False)
-    size_cap: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
+    size_cap: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
     waiting_on_prompt_task_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )

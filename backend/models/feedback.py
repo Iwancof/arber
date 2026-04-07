@@ -156,7 +156,9 @@ class ReliabilityStat(Base):
     horizon_code: Mapped[str | None] = mapped_column(Text, nullable=True)
     model_family: Mapped[str | None] = mapped_column(Text, nullable=True)
     manual_model_name: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    sample_size: Mapped[int] = mapped_column(
+        Integer, server_default=text("0"), nullable=False
+    )
     hit_rate: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     brier: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
     calibration_error: Mapped[Decimal | None] = mapped_column(
@@ -198,7 +200,9 @@ class ManualModelReliability(Base):
     )
     event_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     horizon_code: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    sample_size: Mapped[int] = mapped_column(
+        Integer, server_default=text("0"), nullable=False
+    )
     schema_valid_rate: Mapped[Decimal | None] = mapped_column(
         Numeric, nullable=True
     )

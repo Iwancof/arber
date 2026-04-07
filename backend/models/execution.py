@@ -81,8 +81,8 @@ class OrderLedger(Base):
     time_in_force: Mapped[str] = mapped_column(Text, nullable=False)
     session_type: Mapped[str] = mapped_column(Text, nullable=False)
     qty: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
-    limit_price: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
-    stop_price: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
+    limit_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    stop_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
     status: Mapped[str] = mapped_column(
         Text, server_default=text("'new'"), nullable=False
     )
@@ -132,9 +132,9 @@ class ExecutionFill(Base):
     fill_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    fill_price: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
-    fill_qty: Mapped[Decimal] = mapped_column(Numeric, nullable=False)
-    fee_estimate: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
+    fill_price: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    fill_qty: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    fee_estimate: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
     liquidity_flag: Mapped[str | None] = mapped_column(Text, nullable=True)
     fill_source: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_json: Mapped[dict] = mapped_column(
@@ -173,12 +173,12 @@ class PositionSnapshot(Base):
         nullable=False,
     )
     position_qty: Mapped[Decimal] = mapped_column(
-        Numeric, server_default=text("0"), nullable=False
+        Numeric(18, 8), server_default=text("0"), nullable=False
     )
-    average_cost: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
-    mark_price: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
-    unrealized_pnl: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
-    realized_pnl: Mapped[Decimal | None] = mapped_column(Numeric, nullable=True)
+    average_cost: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    mark_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    unrealized_pnl: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
+    realized_pnl: Mapped[Decimal | None] = mapped_column(Numeric(18, 8), nullable=True)
     snapshot_json: Mapped[dict] = mapped_column(
         JSONB, server_default=text("'{}'::jsonb"), nullable=False
     )

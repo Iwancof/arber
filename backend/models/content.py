@@ -175,7 +175,7 @@ class DocumentAssetLink(Base):
         ForeignKey("core.instrument.instrument_id"),
         nullable=False,
     )
-    link_type: Mapped[str | None] = mapped_column(Text, nullable=True)
+    link_type: Mapped[str] = mapped_column(Text, nullable=False)
     confidence: Mapped[Decimal] = mapped_column(
         Numeric(5, 4), server_default=text("0.5"), nullable=False
     )
@@ -299,7 +299,7 @@ class EventAssetImpact(Base):
         ForeignKey("core.instrument.instrument_id"),
         nullable=False,
     )
-    impact_role: Mapped[str | None] = mapped_column(Text, nullable=True)
+    impact_role: Mapped[str] = mapped_column(Text, nullable=False)
     direction_hint: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[Decimal] = mapped_column(
         Numeric(5, 4), server_default=text("0.5"), nullable=False
@@ -342,7 +342,7 @@ class EventEvidenceLink(Base):
         ForeignKey("content.raw_document.raw_document_id"),
         nullable=False,
     )
-    evidence_kind: Mapped[str | None] = mapped_column(Text, nullable=True)
+    evidence_kind: Mapped[str] = mapped_column(Text, nullable=False)
     span_start: Mapped[int | None] = mapped_column(Integer, nullable=True)
     span_end: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight: Mapped[Decimal] = mapped_column(

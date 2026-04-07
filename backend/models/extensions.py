@@ -64,7 +64,7 @@ class FeatureFlag(Base):
 # 2. SchemaRegistryEntry  (core schema)
 # ---------------------------------------------------------------------------
 class SchemaRegistryEntry(Base):
-    __tablename__ = "schema_registry_entry"
+    __tablename__ = "schema_registry"
     __table_args__ = (
         UniqueConstraint(
             "schema_name", "semantic_version",
@@ -75,8 +75,8 @@ class SchemaRegistryEntry(Base):
             name="ck_schema_registry_entry_status",
         ),
         CheckConstraint(
-            "rollout_state IN ('disabled','internal','paper_only',"
-            "'micro_live','live','deprecated')",
+            "rollout_state IN ('internal','paper_only',"
+            "'micro_live','live')",
             name="ck_schema_registry_entry_rollout_state",
         ),
         {"schema": "core"},
@@ -90,7 +90,7 @@ class SchemaRegistryEntry(Base):
     schema_name: Mapped[str] = mapped_column(Text, nullable=False)
     semantic_version: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(
-        Text, server_default=text("'draft'"), nullable=False
+        Text, server_default=text("'active'"), nullable=False
     )
     owner_team: Mapped[str | None] = mapped_column(Text, nullable=True)
     json_schema_uri: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -102,7 +102,7 @@ class SchemaRegistryEntry(Base):
         Text, nullable=True
     )
     rollout_state: Mapped[str] = mapped_column(
-        Text, server_default=text("'disabled'"), nullable=False
+        Text, server_default=text("'internal'"), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -165,7 +165,9 @@ class ReasonCodeRegistry(Base):
     reason_family: Mapped[str] = mapped_column(Text, nullable=False)
     display_name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    severity: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(
+        Text, server_default=text("'medium'"), nullable=False
+    )
     active: Mapped[bool] = mapped_column(
         Boolean, server_default=text("true"), nullable=False
     )
@@ -236,7 +238,7 @@ class WorkerAdapterRegistry(Base):
             name="ck_worker_adapter_registry_adapter_type",
         ),
         CheckConstraint(
-            "status IN ('disabled','enabled','degraded','retired')",
+            "status IN ('enabled','disabled','degraded','retired')",
             name="ck_worker_adapter_registry_status",
         ),
         {"schema": "core"},
@@ -253,7 +255,7 @@ class WorkerAdapterRegistry(Base):
     adapter_version: Mapped[str] = mapped_column(Text, nullable=False)
     provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
-        Text, server_default=text("'disabled'"), nullable=False
+        Text, server_default=text("'enabled'"), nullable=False
     )
     capability_tags_json: Mapped[dict] = mapped_column(
         JSONB, server_default=text("'[]'::jsonb"), nullable=False
@@ -280,7 +282,7 @@ class BrokerAdapterRegistry(Base):
     __tablename__ = "broker_adapter_registry"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('disabled','enabled','degraded','retired')",
+            "status IN ('enabled','disabled','degraded','retired')",
             name="ck_broker_adapter_registry_status",
         ),
         {"schema": "core"},
@@ -296,7 +298,7 @@ class BrokerAdapterRegistry(Base):
     adapter_version: Mapped[str] = mapped_column(Text, nullable=False)
     broker_family: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(
-        Text, server_default=text("'disabled'"), nullable=False
+        Text, server_default=text("'enabled'"), nullable=False
     )
     capabilities_json: Mapped[dict] = mapped_column(
         JSONB, server_default=text("'[]'::jsonb"), nullable=False
