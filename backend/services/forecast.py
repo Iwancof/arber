@@ -112,6 +112,13 @@ async def run_forecast_pipeline(
 
     result = await worker.execute(task)
 
+    # Reject invalid responses
+    if not result.schema_valid or not result.parsed_json:
+        raise ValueError(
+            f"Worker returned invalid forecast: "
+            f"{result.parse_errors}"
+        )
+
     # 3. Reasoning trace
     trace = ReasoningTrace(
         event_id=event_id,
