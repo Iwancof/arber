@@ -15,6 +15,7 @@ from backend.api.v1.postmortems import router as postmortems_router
 from backend.api.v1.prompts import router as prompts_router
 from backend.api.v1.replay import router as replay_router
 from backend.api.v1.sources import router as sources_router
+from backend.api.v1.ui import router as ui_router
 
 api_v1_router = APIRouter(prefix="/v1")
 api_v1_router.include_router(health_router)
@@ -32,3 +33,4 @@ api_v1_router.include_router(execution_router)
 api_v1_router.include_router(extensions_router)
 api_v1_router.include_router(inquiry_router)
 api_v1_router.include_router(ops_chat_router)
+api_v1_router.include_router(ui_router)
