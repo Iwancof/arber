@@ -42,8 +42,8 @@ def test_all_models_registered():
 
 
 def test_table_count():
-    """Should have 54 tables across all schemas."""
-    assert len(Base.metadata.tables) == 54
+    """Should have 62 tables across all schemas."""
+    assert len(Base.metadata.tables) == 62
 
 
 def test_ledger_tables_exist():

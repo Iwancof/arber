@@ -1,0 +1,195 @@
+openapi: 3.1.0
+info:
+  title: Human Inquiry Addendum API
+  version: 0.1.0
+paths:
+  /v1/inquiry/tray:
+    get:
+      summary: Get current inquiry tray
+      responses:
+        '200':
+          description: OK
+  /v1/inquiry/cases:
+    get:
+      summary: List inquiry cases
+      responses:
+        '200':
+          description: OK
+  /v1/inquiry/cases/{caseId}:
+    get:
+      summary: Get inquiry case dossier
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: OK
+  /v1/inquiry/cases/{caseId}/spawn-task:
+    post:
+      summary: Spawn or revise task for an inquiry case
+      parameters:
+        - in: path
+          name: caseId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '202':
+          description: Accepted
+  /v1/inquiry/tasks:
+    get:
+      summary: List inquiry tasks
+      responses:
+        '200':
+          description: OK
+  /v1/inquiry/tasks/{taskId}:
+    get:
+      summary: Get inquiry task
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: OK
+  /v1/inquiry/tasks/{taskId}/claim:
+    post:
+      summary: Claim inquiry task
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: false
+      responses:
+        '200':
+          description: Claimed
+  /v1/inquiry/tasks/{taskId}/snooze:
+    post:
+      summary: Snooze inquiry task
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Snoozed
+  /v1/inquiry/tasks/{taskId}/submit-response:
+    post:
+      summary: Submit direct or external-LLM response
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [response_channel, raw_response]
+              properties:
+                response_channel:
+                  type: string
+                  enum: [direct_answer, external_llm, api_import]
+                model_name_user_entered:
+                  type: string
+                raw_response:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '202':
+          description: Accepted
+  /v1/inquiry/tasks/{taskId}/request-reformat:
+    post:
+      summary: Request a reformat prompt for invalid response
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '202':
+          description: Accepted
+  /v1/inquiry/tasks/{taskId}/accept:
+    post:
+      summary: Accept response into scoring pipeline
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [responseId]
+              properties:
+                responseId:
+                  type: string
+                  format: uuid
+                effectiveWeight:
+                  type: number
+      responses:
+        '200':
+          description: Accepted
+  /v1/inquiry/tasks/{taskId}/reject:
+    post:
+      summary: Reject response
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Rejected
+  /v1/inquiry/tasks/{taskId}/supersede:
+    post:
+      summary: Supersede task with new revision
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        '202':
+          description: Accepted
+  /v1/inquiry/presence:
+    post:
+      summary: Update operator presence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [availability_state, focus_mode]
+              properties:
+                availability_state:
+                  type: string
+                  enum: [online, busy, away, off_shift]
+                focus_mode:
+                  type: string
+                  enum: [none, review, trading, postmortem]
+                can_receive_push:
+                  type: boolean
+                can_receive_urgent:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated
+  /v1/inquiry/metrics:
+    get:
+      summary: Get inquiry metrics
+      responses:
+        '200':
+          description: OK

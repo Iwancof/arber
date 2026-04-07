@@ -48,6 +48,16 @@ from backend.models.forecasting import (
     RetrievalItem,
     RetrievalSet,
 )
+from backend.models.inquiry import (
+    InquiryAssignment,
+    InquiryCase,
+    InquiryMetricSnapshot,
+    InquiryPresence,
+    InquiryResolution,
+    InquiryResponse,
+    InquirySignal,
+    InquiryTask,
+)
 from backend.models.ops import (
     AuditLog,
     JobRun,
@@ -92,4 +102,9 @@ __all__ = [
     # extensions
     "FeatureFlag", "SchemaRegistryEntry", "EventTypeRegistry", "ReasonCodeRegistry",
     "PluginRegistry", "WorkerAdapterRegistry", "BrokerAdapterRegistry", "ContractCompatibility",
+    # inquiry (human_ops)
+    "InquiryCase", "InquirySignal", "InquiryTask",
+    "InquiryAssignment", "InquiryPresence",
+    "InquiryResponse", "InquiryResolution",
+    "InquiryMetricSnapshot",
 ]

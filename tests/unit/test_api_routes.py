@@ -87,8 +87,8 @@ def test_all_expected_routes_registered():
 
 
 def test_route_count():
-    """Should have 59 routes registered."""
-    assert len(api_v1_router.routes) == 59
+    """Should have 75 routes registered."""
+    assert len(api_v1_router.routes) == 75
 
 
 def _all_methods_for(path: str) -> set[str]:
