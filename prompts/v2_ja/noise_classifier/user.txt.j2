@@ -1,0 +1,23 @@
+<task>
+このヘッドラインを signal, noise, uncertain に分類してください。
+</task>
+
+<headline>{{ headline }}</headline>
+{% if symbols is defined %}
+<symbols>{{ symbols }}</symbols>
+{% endif %}
+
+<output_schema>
+{
+  "classification": "uncertain",
+  "confidence": 0.62,
+  "reason": "ヘッドラインはカタリストの可能性を示唆するが、具体的な新事実が不明確"
+}
+</output_schema>
+
+<rules>
+- classification は signal, noise, uncertain のいずれか
+- confidence は 0 から 1 の間
+- reason は簡潔かつ具体的に
+- JSON のみ出力すること
+</rules>

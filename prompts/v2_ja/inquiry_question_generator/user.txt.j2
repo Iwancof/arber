@@ -1,0 +1,40 @@
+<task>
+Human Inquiry Orchestration 用のオペレーター質問を1件生成してください。
+</task>
+
+<inquiry_kind>{{ inquiry_kind }}</inquiry_kind>
+<decision_action>{{ decision_action }}</decision_action>
+
+<event_json>{{ event_json }}</event_json>
+<forecast_json>{{ forecast_json }}</forecast_json>
+
+{% if evidence_bundle is defined %}
+<evidence_bundle>{{ evidence_bundle }}</evidence_bundle>
+{% endif %}
+
+<output_schema>
+{
+  "question_title": "7203 のトレード候補をレビュー",
+  "question_text": "システムは取引可能なイベントの可能性を検知しましたが、信頼度がポリシー閾値付近です。提供された証拠と予測のみを使用して、この候補を進めるべきか、却下すべきか、追加情報を待つべきか判断してください。",
+  "required_output_schema": {
+    "decision": "approve|reject|wait|need_more_info",
+    "reason_codes": ["bounded_evidence_only"],
+    "notes": "簡潔な根拠"
+  },
+  "acceptance_rules": [
+    "提供された証拠とシステムコンテキストのみを使用すること",
+    "外部の検索や不明確な前提に依存しないこと",
+    "証拠が不十分な場合は need_more_info を返すこと"
+  ],
+  "sla_class": "fast"
+}
+</output_schema>
+
+<rules>
+- question_title は簡潔であること。
+- question_text は具体的かつ回答可能であること。
+- required_output_schema は inquiry_kind に適合すること。
+- acceptance_rules は限定証拠の使用を明示的に強制すること。
+- sla_class は fast, normal, slow のいずれかであること。
+- JSON のみ出力すること。
+</rules>

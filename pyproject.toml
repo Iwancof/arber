@@ -18,6 +18,7 @@ dependencies = [
     "openai>=1.50",
     "alpaca-py>=0.30",
     "feedparser>=6.0",
+    "beautifulsoup4>=4.12",
 ]
 
 [project.optional-dependencies]

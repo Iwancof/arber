@@ -1,0 +1,71 @@
+<task>
+1件のイベントに基づき、日本株の個別銘柄の相対パフォーマンス予測を生成してください。
+</task>
+
+<instrument>{{ symbol }}</instrument>
+<benchmark>{{ benchmark_symbol | default("1306") }}</benchmark>
+
+<event_summary>
+  <event_type>{{ event_type }}</event_type>
+  <direction_hint>{{ direction_hint }}</direction_hint>
+</event_summary>
+
+<event_json>{{ event_json }}</event_json>
+
+<output_schema>
+{
+  "hypotheses": [
+    {
+      "code": "earnings_path_repricing",
+      "weight": 0.65,
+      "description": "イベントがベンチマーク対比で期待業績パスを変化させる"
+    },
+    {
+      "code": "already_priced_mean_reversion",
+      "weight": 0.35,
+      "description": "ヘッドラインは真実だが、影響の大部分は既に織り込み済みの可能性"
+    }
+  ],
+  "selected_hypothesis": "earnings_path_repricing",
+  "rejected_hypotheses": ["already_priced_mean_reversion"],
+  "counterarguments": [
+    {
+      "code": "already_priced",
+      "severity": "medium"
+    }
+  ],
+  "risk_flags": [],
+  "evidence_refs": ["evidence_spans[0]"],
+  "confidence_before": 0.66,
+  "confidence_after": 0.61,
+  "direction_hint": "positive",
+  "horizons": {
+    "1d": {
+      "p_outperform": 0.61,
+      "p_underperform": 0.39,
+      "ret_q10": -0.010,
+      "ret_q50": 0.006,
+      "ret_q90": 0.021
+    },
+    "5d": {
+      "p_outperform": 0.58,
+      "p_underperform": 0.42,
+      "ret_q10": -0.018,
+      "ret_q50": 0.009,
+      "ret_q90": 0.032
+    }
+  }
+}
+</output_schema>
+
+<rules>
+- 上記のフィールド名を正確に使用すること。
+- 少なくとも2つの仮説を含めること。
+- 仮説の weight の合計は 1.0 であること。
+- selected_hypothesis は仮説コードの1つと一致すること。
+- rejected_hypotheses は選択されなかった候補を含むこと。
+- 各ホライズンで p_outperform + p_underperform = 1.0 であること。
+- 1d と 5d のホライズンのみ使用すること。
+- イベントが実質的な相対エッジを示さない場合、confidence_after を 0.50-0.52 に設定し、ホライズンの確率を 0.50 付近に保つこと。
+- JSON のみ出力すること。
+</rules>

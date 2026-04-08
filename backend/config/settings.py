@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     alpaca_base_url: str = "https://paper-api.alpaca.markets"
     alpaca_data_url: str = "https://data.alpaca.markets"
 
+    # J-Quants API (JP market data)
+    jquants_email: str = ""
+    jquants_password: str = ""
+
     # Execution mode
     execution_mode: str = "replay"  # replay | shadow | paper | micro_live | live
 

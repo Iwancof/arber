@@ -1,0 +1,45 @@
+<task>
+日本語の文書から構造化マーケットイベントを抽出してください。
+</task>
+
+{% if source_name is defined %}
+<source_name>{{ source_name }}</source_name>
+{% endif %}
+
+{% if symbols is defined %}
+<source_symbols>{{ symbols }}</source_symbols>
+{% endif %}
+
+<document>
+  <headline>{{ headline }}</headline>
+  <body>{{ raw_text }}</body>
+</document>
+
+<output_schema>
+{
+  "schema_name": "event_record",
+  "schema_version": "1.0.0",
+  "events": [
+    {
+      "event_type": "jp_earnings_tanshin",
+      "affected_assets": ["7203"],
+      "direction_hint": "positive",
+      "materiality": 0.72,
+      "novelty": 0.66,
+      "evidence_spans": [
+        {"text": "文書からの引用", "start": 0, "end": 42}
+      ]
+    }
+  ]
+}
+</output_schema>
+
+<rules>
+- schema_name, schema_version, events キーを持つ JSON を1つ返すこと。
+- events はノイズの場合は空配列でよい。
+- システムプロンプトの有効な taxonomy ラベルのみ使用すること。
+- 最大2件まで。
+- evidence_spans.text は headline/body からの引用であること。
+- start/end は結合されたテキスト内の文字オフセット。概算値でもよいが省略しないこと。
+- JSON 以外は出力しないこと。
+</rules>

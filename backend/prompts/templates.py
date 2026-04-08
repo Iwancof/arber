@@ -2,6 +2,10 @@
 
 Loads system/user prompts from the prompts/ directory.
 Templates use Jinja2 for variable substitution.
+
+Supports both English (v2) and Japanese (v2_ja) prompt packs.
+Japanese templates are stored with a "_ja" suffix in the registry key,
+e.g., "event_extract_ja".
 """
 
 from dataclasses import dataclass
@@ -14,8 +18,9 @@ PROMPTS_DIR = (
     Path(__file__).resolve().parent.parent.parent / "prompts"
 )
 
-# Active prompt version. Change this to switch all prompts.
+# Active prompt versions. Change these to switch all prompts.
 ACTIVE_VERSION = "v2"
+ACTIVE_VERSION_JA = "v2_ja"
 
 
 @dataclass(frozen=True)
@@ -78,8 +83,8 @@ def load_template(
     user_path = base / "user.txt.j2"
 
     if not system_path.exists() or not user_path.exists():
-        # Fallback to v1
-        if ver != "v1":
+        # Fallback to v1 (only for non-JA versions)
+        if ver != "v1" and not ver.endswith("_ja"):
             return load_template(task_type, version="v1")
         return None
 
@@ -94,20 +99,33 @@ def load_template(
 # Pre-loaded registry for quick access
 TEMPLATES: dict[str, PromptTemplate] = {}
 
+# All supported task types
+_TASK_TYPES = [
+    "event_extract",
+    "single_name_forecast",
+    "skeptic_review",
+    "judge_postmortem",
+    "noise_classifier",
+    "inquiry_question_generator",
+]
+
 
 def _init_templates() -> None:
-    """Load all templates on import."""
-    for task_type in [
-        "event_extract",
-        "single_name_forecast",
-        "skeptic_review",
-        "judge_postmortem",
-        "noise_classifier",
-        "inquiry_question_generator",
-    ]:
+    """Load all templates on import.
+
+    Loads both English (v2) and Japanese (v2_ja) templates.
+    Japanese templates are stored with a "_ja" suffix in the key.
+    """
+    for task_type in _TASK_TYPES:
+        # Load English (v2) templates
         tmpl = load_template(task_type)
         if tmpl:
             TEMPLATES[task_type] = tmpl
+
+        # Load Japanese (v2_ja) templates
+        tmpl_ja = load_template(task_type, version=ACTIVE_VERSION_JA)
+        if tmpl_ja:
+            TEMPLATES[f"{task_type}_ja"] = tmpl_ja
 
 
 _init_templates()
@@ -117,4 +135,24 @@ def get_template(
     task_type: str,
 ) -> PromptTemplate | None:
     """Get the active template for a task type."""
+    return TEMPLATES.get(task_type)
+
+
+def get_template_for_language(
+    task_type: str,
+    language: str = "en",
+) -> PromptTemplate | None:
+    """Get the active template for a task type in the specified language.
+
+    Falls back to English if the requested language is not available.
+
+    Args:
+        task_type: The prompt task type (e.g., "event_extract").
+        language: Language code ("en" or "ja").
+
+    Returns:
+        The matching PromptTemplate, or None if not found.
+    """
+    if language == "ja":
+        return TEMPLATES.get(f"{task_type}_ja") or TEMPLATES.get(task_type)
     return TEMPLATES.get(task_type)

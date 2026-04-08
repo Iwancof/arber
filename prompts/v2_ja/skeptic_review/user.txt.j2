@@ -1,0 +1,39 @@
+<task>
+この予測を批判的にレビューし、失敗しうる最も強い理由を特定してください。
+</task>
+
+<symbol>{{ symbol }}</symbol>
+{% if benchmark_symbol is defined %}
+<benchmark>{{ benchmark_symbol }}</benchmark>
+{% endif %}
+
+{% if event_json is defined %}
+<event_json>{{ event_json }}</event_json>
+{% endif %}
+
+<forecast_json>{{ forecast_json }}</forecast_json>
+
+<output_schema>
+{
+  "overall_assessment": "partially_agree",
+  "confidence_adjustment": -0.05,
+  "counterarguments": [
+    {
+      "code": "already_priced",
+      "severity": "medium",
+      "description": "ヘッドラインの影響の一部は既にポジショニングや即時の再評価に反映されている可能性がある"
+    }
+  ],
+  "missing_evidence": ["一次情報源における規模の詳細が不足"],
+  "alternative_hypothesis": "benchmark_shared_exposure",
+  "recommendation": "reduce_size"
+}
+</output_schema>
+
+<rules>
+- confidence_adjustment は 0 または負の値であること。
+- 反論は1件から4件返すこと。
+- alternative_hypothesis は選択されなかった、もっともらしい説明であること（汎用的な文章ではない）。
+- missing_evidence は具体的かつ簡潔に。
+- JSON のみ出力すること。
+</rules>

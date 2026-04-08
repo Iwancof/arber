@@ -1,0 +1,31 @@
+<task>
+この予測を実現相対リターンと照合して評価してください。
+</task>
+
+<symbol>{{ symbol }}</symbol>
+<horizon>{{ horizon_code }}</horizon>
+<realized_rel_return>{{ realized_rel_return }}</realized_rel_return>
+
+<forecast_json>{{ forecast_json }}</forecast_json>
+
+<output_schema>
+{
+  "verdict": "mixed",
+  "direction_correct": true,
+  "magnitude_assessment": "underestimated",
+  "failure_codes": ["magnitude_underestimated"],
+  "lessons_learned": [
+    "直接的な業績パスへの影響がある確固たるカタリストに対しては、上方テイルをより広く設定すべき"
+  ],
+  "source_quality_note": "証拠の質は十分だったが完全ではなかった",
+  "prompt_quality_note": "プロンプトは方向性の把握には適していたが、規模の持続性の指定が不十分だった"
+}
+</output_schema>
+
+<rules>
+- verdict は correct, wrong, mixed, insufficient のいずれかのみ使用すること。
+- magnitude_assessment は underestimated, accurate, overestimated のいずれかのみ使用すること。
+- failure_codes は0件から3件。
+- lessons_learned はアクション可能であること。
+- JSON のみ出力すること。
+</rules>
