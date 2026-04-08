@@ -89,8 +89,21 @@ async def submit_order(
     )
     instrument = i_result.scalar_one()
 
+    # Block submission if size_cap is not set
+    if (
+        not decision.size_cap
+        or decision.size_cap <= 0
+    ):
+        raise RuntimeError(
+            "Cannot submit order: size_cap not set"
+        )
+
     # Convert notional USD (size_cap) to shares
-    size_cap = decision.size_cap or Decimal("100")
+    size_cap = decision.size_cap
+    # TODO: AlpacaMarketDataAdapter is instantiated
+    # directly here. It should be injected via the
+    # caller or a provider registry for testability
+    # and multi-source support.
     from backend.adapters.source.alpaca_market_data import (
         AlpacaMarketDataAdapter,
     )

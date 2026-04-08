@@ -9,7 +9,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.adapters.source.alpaca_news import (
@@ -517,11 +517,37 @@ class PipelineWorker:
             )
         )
 
+        # Event-level dedup: same symbol + event_type
+        # within 30 min window → skip duplicate
+        evt_type = ev.get("event_type", "unknown")
+        if instrument_id:
+            dup = await db.execute(
+                select(
+                    EventLedger.event_id
+                ).where(
+                    and_(
+                        EventLedger
+                        .issuer_instrument_id
+                        == instrument_id,
+                        EventLedger.event_type
+                        == evt_type,
+                        EventLedger.created_at
+                        > datetime.now(UTC)
+                        - timedelta(minutes=30),
+                    )
+                ).limit(1)
+            )
+            if dup.scalar_one_or_none():
+                logger.info(
+                    "Event dedup: skip %s for %s",
+                    evt_type,
+                    instrument_id,
+                )
+                return None
+
         event = EventLedger(
             raw_document_id=doc.raw_document_id,
-            event_type=ev.get(
-                "event_type", "unknown"
-            ),
+            event_type=evt_type,
             issuer_instrument_id=instrument_id,
             market_profile_id=(
                 self._market_profile_id

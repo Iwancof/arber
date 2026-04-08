@@ -54,16 +54,18 @@ async def check_time_exits(
         horizon = meta.get(
             "trade_horizon", "5d"
         )
-        entry_time = order.submitted_at
+        # Use updated_at as proxy for filled_at
+        # (set when status changes to filled)
+        entry_time = (
+            order.updated_at or order.submitted_at
+        )
 
-        if horizon == "1d":
-            exit_after = (
-                entry_time + timedelta(days=1)
-            )
-        else:
-            exit_after = (
-                entry_time + timedelta(days=5)
-            )
+        # Approximate trading days (skip weekends)
+        # 1 trading day ≈ 2 cal, 5 trading ≈ 7 cal
+        cal_days = 2 if horizon == "1d" else 7
+        exit_after = (
+            entry_time + timedelta(days=cal_days)
+        )
 
         if now >= exit_after:
             logger.info(
@@ -120,15 +122,22 @@ async def check_stop_exits(
             STOP_1D if horizon == "1d" else STOP_5D
         )
 
-        # Calculate PnL percentage
+        # Calculate PnL percentage (side-aware)
         if (
             pos.average_cost
             and pos.average_cost > 0
         ):
-            pnl_pct = (
-                (pos.mark_price or Decimal("0"))
-                - pos.average_cost
-            ) / pos.average_cost
+            mark = pos.mark_price or Decimal("0")
+            if order.side == "sell":  # short
+                pnl_pct = (
+                    (pos.average_cost - mark)
+                    / pos.average_cost
+                )
+            else:  # long
+                pnl_pct = (
+                    (mark - pos.average_cost)
+                    / pos.average_cost
+                )
         else:
             continue
 
@@ -187,7 +196,8 @@ async def _close_position(
     )
     meta["exited"] = True
     order.metadata_json = meta
-    order.status = "canceled"
+    # Keep status as "filled" — the exited flag in
+    # metadata is sufficient for exit-loop filtering
 
     await emit_event(
         db,

@@ -10,10 +10,13 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.adapters.worker.base import WorkerAdapter, WorkerTask
+from backend.adapters.worker.base import (
+    WorkerAdapter,
+    WorkerTask,
+)
 from backend.core.outbox import emit_event
 from backend.models.content import EventLedger
-from backend.models.core import Instrument
+from backend.models.core import Instrument, MarketProfile
 from backend.models.forecasting import (
     ForecastHorizon,
     ForecastLedger,
@@ -79,7 +82,15 @@ async def run_forecast_pipeline(
     4. Create forecast ledger entry with horizons
     """
     # 1. Retrieval
-    retrieval_set = await build_retrieval_set(db, event_id=event_id)
+    # TODO(retrieval-v2): v1_simple only attaches
+    # the triggering event. Future versions should
+    # include: related events for the same symbol,
+    # sector context, prior forecast accuracy, and
+    # recent price action. Without these the model
+    # lacks historical context for calibration.
+    retrieval_set = await build_retrieval_set(
+        db, event_id=event_id,
+    )
 
     # 2. Worker execution
     event_result = await db.execute(
@@ -88,9 +99,19 @@ async def run_forecast_pipeline(
     event = event_result.scalar_one()
 
     instrument_result = await db.execute(
-        select(Instrument).where(Instrument.instrument_id == instrument_id)
+        select(Instrument).where(
+            Instrument.instrument_id == instrument_id,
+        )
     )
     instrument = instrument_result.scalar_one()
+
+    # Resolve benchmark symbol so the model knows
+    # what "outperform" is measured against.
+    benchmark_symbol = await _resolve_benchmark(
+        db,
+        benchmark_instrument_id=benchmark_instrument_id,
+        market_profile_id=market_profile_id,
+    )
 
     task = WorkerTask(
         task_type="single_name_forecast",
@@ -102,9 +123,16 @@ async def run_forecast_pipeline(
             "event_type": event.event_type,
             "event_json": event.event_json,
             "instrument_symbol": instrument.symbol,
-            "market_profile_id": str(market_profile_id),
+            "benchmark_symbol": benchmark_symbol,
+            "market_profile_id": str(
+                market_profile_id
+            ),
             "direction_hint": event.direction_hint,
-            "materiality": str(event.materiality) if event.materiality else None,
+            "materiality": (
+                str(event.materiality)
+                if event.materiality
+                else None
+            ),
         },
         evidence_refs=[str(event.raw_document_id)],
         mode=execution_mode,
@@ -182,6 +210,44 @@ async def run_forecast_pipeline(
     await db.commit()
     await db.refresh(forecast)
     return forecast
+
+
+async def _resolve_benchmark(
+    db: AsyncSession,
+    *,
+    benchmark_instrument_id: UUID | None,
+    market_profile_id: UUID,
+) -> str:
+    """Resolve benchmark symbol for a forecast.
+
+    Priority:
+    1. Explicit benchmark_instrument_id
+    2. Default per market currency (SPY / 1306)
+    """
+    if benchmark_instrument_id:
+        row = await db.execute(
+            select(Instrument.symbol).where(
+                Instrument.instrument_id
+                == benchmark_instrument_id,
+            )
+        )
+        sym = row.scalar_one_or_none()
+        if sym:
+            return sym
+
+    # Fallback: derive from market profile currency
+    mp_row = await db.execute(
+        select(
+            MarketProfile.quote_currency
+        ).where(
+            MarketProfile.market_profile_id
+            == market_profile_id,
+        )
+    )
+    currency = mp_row.scalar_one_or_none()
+    if currency == "JPY":
+        return "1306"
+    return "SPY"
 
 
 def _to_decimal(value: Any) -> Decimal | None:

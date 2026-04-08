@@ -18,6 +18,8 @@ Only the following `event_type` values are valid in v1.
 - `corp_mna_acquirer`
 - `corp_contract_win_major`
 - `corp_contract_loss_major`
+- `corp_government_contract`
+- `corp_bid_or_tender_win`
 - `corp_product_launch_major`
 - `corp_product_issue_or_recall`
 - `corp_executive_change_material`
@@ -33,6 +35,11 @@ Only the following `event_type` values are valid in v1.
 - `reg_litigation_adverse`
 - `reg_antitrust_or_enforcement`
 - `reg_trade_restriction_or_sanction`
+- `reg_reimbursement_change_favorable`
+- `reg_reimbursement_change_adverse`
+- `reg_program_eligibility_favorable`
+- `reg_program_eligibility_adverse`
+- `reg_subsidy_or_incentive`
 
 ### Macro (`macro_*`)
 - `macro_inflation_hot`

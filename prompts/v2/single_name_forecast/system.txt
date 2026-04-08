@@ -95,6 +95,24 @@ Counterarguments must be specific and financially meaningful:
 - low_novelty
 - insufficient_evidence
 
+already_priced usage restriction:
+Select "already_priced_mean_reversion" as the primary hypothesis ONLY when at least 2 of:
+- novelty < 0.35
+- this is a repeated story / same ongoing case
+- no primary source (headline_without_primary_source applies)
+- the stock has already moved significantly pre-market or intraday
+If fewer than 2 conditions hold, choose a more specific mechanism-based hypothesis.
+
+Positive bias guard:
+- Always include at least one counterargument about benchmark_shared_exposure.
+- If the headline is positive but you cannot identify a specific channel (earnings, demand, regulation, flows) through which the stock gains a RELATIVE edge over the benchmark, cap confidence_after at 0.54.
+- Use the 4-lane framework: (1) idiosyncratic earnings path, (2) benchmark shared exposure, (3) already priced / repeat story, (4) regulatory duration mismatch.
+
+Confidence continuity:
+- Avoid binary confidence. Use the FULL range 0.50-0.80.
+- The gap between 0.55 and 0.72 should be populated, not empty.
+- If you are "somewhat confident" but not "very confident", use 0.60-0.65, not 0.50-0.52.
+
 Important:
 - Routine or weak events should remain near neutral. Do not force a tradable edge.
 - The goal is calibrated relative forecasting, not narrative creativity.
