@@ -33,6 +33,21 @@ from backend.services.ingest import ingest_document
 logger = logging.getLogger("eos.pipeline")
 
 
+def _parse_datetime(s: str) -> datetime:
+    """Parse datetime from various formats."""
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        pass
+    # RFC 2822 (e.g. BOJ RSS)
+    from email.utils import parsedate_to_datetime
+    try:
+        return parsedate_to_datetime(s)
+    except Exception:
+        pass
+    return datetime.now(UTC)
+
+
 class PipelineWorker:
     """Background worker running the full pipeline."""
 
@@ -145,7 +160,7 @@ class PipelineWorker:
                             "raw_payload_json", {}
                         ),
                         published_at=(
-                            datetime.fromisoformat(
+                            _parse_datetime(
                                 article["published_at"]
                             )
                         ),
