@@ -507,10 +507,13 @@ class PipelineWorker:
 
         ev = events[0]  # Take first event
 
-        # Resolve instrument
+        # Resolve instrument (auto-register if new)
+        lang = doc.language_code or "en"
         instrument_id = (
             await self._resolve_instrument(
-                db, ev.get("affected_assets", [])
+                db,
+                ev.get("affected_assets", []),
+                language=lang,
             )
         )
 
@@ -581,13 +584,58 @@ class PipelineWorker:
         self,
         db: AsyncSession,
         symbols: list[str],
+        *,
+        language: str = "en",
     ) -> UUID | None:
-        """Resolve symbols to an instrument ID."""
+        """Resolve symbols to an instrument ID.
+
+        Auto-registers unknown symbols if a market
+        profile is configured.
+        """
         if not symbols:
             return None
+
+        # Try existing
         result = await db.execute(
             select(Instrument.instrument_id)
             .where(Instrument.symbol.in_(symbols))
             .limit(1)
         )
-        return result.scalar_one_or_none()
+        existing = result.scalar_one_or_none()
+        if existing:
+            return existing
+
+        # Auto-register first symbol
+        if not self._market_profile_id:
+            return None
+
+        sym = symbols[0]
+        currency = "JPY" if language == "ja" else "USD"
+
+        # Find appropriate market profile
+        from backend.models.core import MarketProfile
+        mp_result = await db.execute(
+            select(MarketProfile.market_profile_id)
+            .where(
+                MarketProfile.quote_currency == currency
+            )
+            .limit(1)
+        )
+        mp_id = (
+            mp_result.scalar_one_or_none()
+            or self._market_profile_id
+        )
+
+        logger.info(
+            "Auto-register: %s (%s)", sym, currency
+        )
+        instrument = Instrument(
+            market_profile_id=mp_id,
+            symbol=sym,
+            display_name=sym,
+            instrument_type="equity",
+            quote_currency=currency,
+        )
+        db.add(instrument)
+        await db.flush()
+        return instrument.instrument_id
