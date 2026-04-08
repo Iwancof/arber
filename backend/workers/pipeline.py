@@ -15,6 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.adapters.source.alpaca_news import (
     AlpacaNewsAdapter,
 )
+from backend.adapters.source.boj_rss import (
+    BOJRSSAdapter,
+)
 from backend.adapters.worker.registry import (
     get_worker_adapter,
 )
@@ -44,8 +47,10 @@ class PipelineWorker:
         self._symbols = symbols or []
         self._market_profile_id = market_profile_id
         self._news = AlpacaNewsAdapter()
+        self._boj = BOJRSSAdapter()
         self._worker = get_worker_adapter()
         self._running = False
+        self._jp_market_id: UUID | None = None
 
     async def run_once(self) -> dict[str, int]:
         """Run one full pipeline cycle.
@@ -85,20 +90,50 @@ class PipelineWorker:
             except Exception:
                 logger.exception("News fetch failed")
                 stats["errors"] += 1
+                articles = []
+
+            # Step 1b: Fetch JP news (BOJ)
+            try:
+                jp_articles = await self._boj.fetch(
+                    limit=5
+                )
+                articles.extend(jp_articles)
+                stats["fetched"] = len(articles)
+                if jp_articles:
+                    logger.info(
+                        "JP: +%d BOJ articles",
+                        len(jp_articles),
+                    )
+            except Exception:
+                logger.exception(
+                    "BOJ fetch failed"
+                )
+
+            if not articles:
                 return stats
 
             # Step 2: Ingest documents
             source_id = await self._get_source_id(db)
-            if not source_id:
-                logger.error("No active source found")
-                return stats
+            jp_source_id = await self._get_jp_source_id(
+                db
+            )
 
             docs: list[RawDocument] = []
             for article in articles:
+                lang = article.get(
+                    "language_code", "en"
+                )
+                sid = (
+                    jp_source_id
+                    if lang == "ja" and jp_source_id
+                    else source_id
+                )
+                if not sid:
+                    continue
                 try:
                     doc = await ingest_document(
                         db,
-                        source_id=source_id,
+                        source_id=sid,
                         headline=article.get(
                             "headline"
                         ),
@@ -381,6 +416,28 @@ class PipelineWorker:
         row = result.scalar_one_or_none()
         return row
 
+    async def _get_jp_source_id(
+        self, db: AsyncSession
+    ) -> UUID | None:
+        """Get the first active JP source."""
+        from backend.models.sources import (
+            SourceRegistry,
+        )
+
+        result = await db.execute(
+            select(
+                SourceRegistry.source_id
+            ).where(
+                SourceRegistry.source_code.in_(
+                    [
+                        "boj_rss",
+                        "jpx_disclosure",
+                    ]
+                )
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def _extract_event(
         self,
         db: AsyncSession,
@@ -391,13 +448,19 @@ class PipelineWorker:
             WorkerTask,
         )
 
+        # Language-aware task type
+        lang = doc.language_code or "en"
+        task_type = (
+            "event_extract_ja"
+            if lang == "ja"
+            else "event_extract"
+        )
+
         task = WorkerTask(
-            task_type="event_extract",
+            task_type=task_type,
             schema_name="event_record",
             schema_version="1.0.0",
-            prompt_template_id=(
-                "event_extract_v1"
-            ),
+            prompt_template_id=task_type,
             prompt_version="1.0.0",
             input_payload={
                 "headline": doc.headline or "",
