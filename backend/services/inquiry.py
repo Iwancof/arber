@@ -21,6 +21,7 @@ import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config.settings import settings
 from backend.core.outbox import emit_event
 from backend.models.inquiry import (
     InquiryAssignment,
@@ -34,10 +35,10 @@ from backend.models.inquiry import (
 logger = logging.getLogger("eos.inquiry")
 
 INQUIRY_DISCORD_WEBHOOK = (
-    "https://discord.com/api/webhooks/"
-    "1491079099362443364/"
-    "LDDoAL5xZYccMkH5nxQTuVK-cadpUC5JwX1RRVJUSX-"
-    "tRUzYXdb58QJVVUH6SUQ3R-Vn"
+    settings.inquiry_discord_webhook
+    if hasattr(settings, "inquiry_discord_webhook")
+    and settings.inquiry_discord_webhook
+    else ""
 )
 
 # ---------------------------------------------------------------

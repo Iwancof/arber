@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     jquants_email: str = ""
     jquants_password: str = ""
 
+    # Discord Webhooks
+    discord_webhook: str = ""
+    inquiry_discord_webhook: str = ""
+
     # Execution mode
     execution_mode: str = "replay"  # replay | shadow | paper | micro_live | live
 

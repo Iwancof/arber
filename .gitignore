@@ -47,3 +47,5 @@ Thumbs.db
 # Misc
 *.log
 *.bak
+.claude/scheduled_tasks.lock
+*.sqlite
