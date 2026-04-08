@@ -25,6 +25,22 @@ STOP_1D = Decimal("-0.02")  # -2%
 STOP_5D = Decimal("-0.03")  # -3%
 
 
+def _add_trading_days(
+    start: datetime, days: int
+) -> datetime:
+    """Add N trading days (skip weekends).
+
+    Saturday=5, Sunday=6 are skipped.
+    """
+    current = start
+    added = 0
+    while added < days:
+        current += timedelta(days=1)
+        if current.weekday() < 5:
+            added += 1
+    return current
+
+
 async def check_time_exits(
     db: AsyncSession,
     broker: BrokerAdapter,
@@ -60,11 +76,12 @@ async def check_time_exits(
             order.updated_at or order.submitted_at
         )
 
-        # Approximate trading days (skip weekends)
-        # 1 trading day ≈ 2 cal, 5 trading ≈ 7 cal
-        cal_days = 2 if horizon == "1d" else 7
-        exit_after = (
-            entry_time + timedelta(days=cal_days)
+        # Count actual weekdays (skip weekends)
+        trading_days = (
+            1 if horizon == "1d" else 5
+        )
+        exit_after = _add_trading_days(
+            entry_time, trading_days
         )
 
         if now >= exit_after:

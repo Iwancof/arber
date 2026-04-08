@@ -4,6 +4,7 @@ Bridges decisions to broker adapters, manages order lifecycle,
 and tracks positions. Respects kill switches and execution modes.
 """
 
+import logging
 from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
@@ -15,7 +16,10 @@ from backend.adapters.broker.base import (
     BrokerAdapter,
     OrderIntent,
 )
-from backend.adapters.broker.registry import validate_adapter_for_mode
+from backend.adapters.broker.registry import (
+    validate_adapter_for_mode,
+)
+from backend.config.settings import settings
 from backend.core.execution_mode import (
     ExecutionMode,
     validate_mode_for_order_submission,
@@ -29,6 +33,38 @@ from backend.models.execution import (
     PositionSnapshot,
 )
 from backend.models.forecasting import DecisionLedger
+
+logger = logging.getLogger("eos.execution")
+
+
+async def _get_reference_price(
+    symbol: str,
+) -> Decimal | None:
+    """Get reference price for order sizing.
+
+    Uses J-Quants for JP symbols (4-digit codes),
+    Alpaca for everything else.
+    """
+    from backend.adapters.source.alpaca_market_data import (
+        AlpacaMarketDataAdapter,
+    )
+
+    # JP symbols: 4-digit numeric codes
+    if (
+        symbol.isdigit()
+        and len(symbol) == 4
+        and settings.jquants_email
+    ):
+            from backend.adapters.source.jquants import (
+                JQuantsAdapter,
+            )
+            jq = JQuantsAdapter()
+            return await jq.get_latest_price(
+                symbol
+            )
+
+    mkt = AlpacaMarketDataAdapter()
+    return await mkt.get_latest_price(symbol)
 
 
 async def submit_order(
@@ -98,17 +134,9 @@ async def submit_order(
             "Cannot submit order: size_cap not set"
         )
 
-    # Convert notional USD (size_cap) to shares
+    # Convert notional to shares via market price
     size_cap = decision.size_cap
-    # TODO: AlpacaMarketDataAdapter is instantiated
-    # directly here. It should be injected via the
-    # caller or a provider registry for testability
-    # and multi-source support.
-    from backend.adapters.source.alpaca_market_data import (
-        AlpacaMarketDataAdapter,
-    )
-    mkt = AlpacaMarketDataAdapter()
-    price = await mkt.get_latest_price(
+    price = await _get_reference_price(
         instrument.symbol
     )
     if price and price > 0:
@@ -119,20 +147,17 @@ async def submit_order(
     else:
         qty = Decimal("1")
 
-    # Determine trade_horizon from forecast horizons
-    from backend.models.forecasting import ForecastHorizon
-    fh_result = await db.execute(
-        select(ForecastHorizon.horizon_code).where(
-            ForecastHorizon.forecast_id
-            == decision.forecast_id
-        )
-    )
-    horizon_codes = [
-        r for r in fh_result.scalars().all()
-    ]
-    trade_horizon = (
-        "1d" if "1d" in horizon_codes else "5d"
-    )
+    # Read trade_horizon from decision's
+    # reason_codes (set by decision service)
+    trade_horizon = "5d"  # default
+    for code in (
+        decision.reason_codes_json or []
+    ):
+        if code.startswith("trade_horizon_"):
+            trade_horizon = code.replace(
+                "trade_horizon_", ""
+            )
+            break
 
     # Build order intent
     intent = OrderIntent(

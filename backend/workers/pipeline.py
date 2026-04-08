@@ -5,6 +5,7 @@ Runs as an asyncio loop with configurable intervals.
 """
 
 import asyncio
+import hashlib
 import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -46,6 +47,25 @@ def _parse_datetime(s: str) -> datetime:
     except Exception:
         pass
     return datetime.now(UTC)
+
+
+def _event_signature(
+    instrument_id: UUID | None,
+    event_type: str,
+    headline: str | None,
+) -> str:
+    """Compute event signature for dedup.
+
+    Combines instrument, event type, and first 50
+    chars of headline into a stable hash.
+    """
+    key = (
+        f"{instrument_id}:{event_type}"
+        f":{(headline or '')[:50]}"
+    )
+    return hashlib.sha256(
+        key.encode()
+    ).hexdigest()[:32]
 
 
 class PipelineWorker:
@@ -517,33 +537,34 @@ class PipelineWorker:
             )
         )
 
-        # Event-level dedup: same symbol + event_type
-        # within 30 min window → skip duplicate
+        # Event-level dedup via signature hash
+        # Covers same symbol + type + headline
+        # within 2-hour window
         evt_type = ev.get("event_type", "unknown")
-        if instrument_id:
-            dup = await db.execute(
-                select(
-                    EventLedger.event_id
-                ).where(
-                    and_(
-                        EventLedger
-                        .issuer_instrument_id
-                        == instrument_id,
-                        EventLedger.event_type
-                        == evt_type,
-                        EventLedger.created_at
-                        > datetime.now(UTC)
-                        - timedelta(minutes=30),
-                    )
-                ).limit(1)
-            )
-            if dup.scalar_one_or_none():
-                logger.info(
-                    "Event dedup: skip %s for %s",
-                    evt_type,
-                    instrument_id,
+        sig = _event_signature(
+            instrument_id, evt_type, doc.headline,
+        )
+
+        existing = await db.execute(
+            select(EventLedger.event_id).where(
+                and_(
+                    EventLedger.event_json[
+                        "_signature"
+                    ].as_string()
+                    == sig,
+                    EventLedger.created_at
+                    > datetime.now(UTC)
+                    - timedelta(hours=2),
                 )
-                return None
+            ).limit(1)
+        )
+        if existing.scalar_one_or_none():
+            logger.info(
+                "Event sig dedup: %s", sig[:8],
+            )
+            return None
+
+        ev["_signature"] = sig
 
         event = EventLedger(
             raw_document_id=doc.raw_document_id,

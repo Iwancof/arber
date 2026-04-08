@@ -392,7 +392,10 @@ async def evaluate_forecast(
         decision_status=status,
         policy_version=DEFAULT_POLICY_VERSION,
         size_cap=size_cap,
-        reason_codes_json=[r["code"] for r in reasons],
+        reason_codes_json=(
+            [r["code"] for r in reasons]
+            + [f"trade_horizon_{trade_horizon}"]
+        ),
     )
     db.add(decision)
     await db.flush()
