@@ -1,0 +1,17 @@
+Review this candidate symbol for promotion.
+
+Candidate: {{ symbol }}
+Market: {{ market_code }}
+Discovery summary: {{ candidate_json }}
+Recent evidence: {{ evidence_bundle_json }}
+Current watchlist: {{ watched_symbols_json }}
+
+Return JSON:
+{
+  "promotion_recommendation": "observe_only|watchlist_add|inquiry_eligible|policy_eligible|reject",
+  "promotion_confidence": 0.0,
+  "key_reasons": ["..."],
+  "redundancy_risk": "low|medium|high",
+  "missing_evidence": ["..."],
+  "conditions_to_promote": ["..."]
+}

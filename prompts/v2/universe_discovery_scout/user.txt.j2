@@ -1,0 +1,23 @@
+Evaluate whether new symbols should be added to monitoring.
+
+Market: {{ market_code }}
+Current watched symbols: {{ watched_symbols_json }}
+Recent event bundle: {{ recent_events_json }}
+Sector coverage summary: {{ sector_coverage_json }}
+Known relations: {{ relation_edges_json }}
+
+Return JSON:
+{
+  "candidates": [
+    {
+      "symbol": "...",
+      "relation_to_watchlist": "peer|supplier|customer|competitor|macro_sensitive|event_only|unknown",
+      "why_now": "...",
+      "candidate_reason_codes": ["..."],
+      "discovery_score_hint": 0.0,
+      "promotion_recommendation": "observe_only|watchlist_add|inquiry_eligible|policy_eligible|reject"
+    }
+  ],
+  "coverage_gaps": ["..."],
+  "do_not_expand_reasons": ["..."]
+}

@@ -77,6 +77,18 @@ from backend.models.ops_chat import (
     ContextCapsule,
     ContextCapsuleSourceRef,
 )
+from backend.models.research import (
+    CandidateSymbol,
+    RelatedSymbolEdge,
+    ResearchBrief,
+    ResearchCase,
+    ResearchEvidence,
+    ResearchFeedback,
+    ResearchJob,
+    ResearchQueryPlan,
+    ResearchScope,
+    SymbolDossierSnapshot,
+)
 from backend.models.sources import (
     SourceBundle,
     SourceBundleItem,
@@ -124,4 +136,11 @@ __all__ = [
     "ChatIntent", "ChatActionProposal",
     "ChatActionExecution", "ChatMemoryNote",
     "ChatModeTransition",
+    # research_ops
+    "ResearchCase", "ResearchScope",
+    "ResearchJob", "ResearchQueryPlan",
+    "ResearchEvidence", "ResearchBrief",
+    "SymbolDossierSnapshot",
+    "CandidateSymbol", "RelatedSymbolEdge",
+    "ResearchFeedback",
 ]

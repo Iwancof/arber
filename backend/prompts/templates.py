@@ -107,6 +107,10 @@ _TASK_TYPES = [
     "judge_postmortem",
     "noise_classifier",
     "inquiry_question_generator",
+    "context_deepener",
+    "universe_discovery_scout",
+    "candidate_promotion_reviewer",
+    "research_brief_composer",
 ]
 
 

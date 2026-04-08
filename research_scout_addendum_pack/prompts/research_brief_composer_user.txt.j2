@@ -1,0 +1,20 @@
+Compose a research brief.
+
+Case summary: {{ case_summary }}
+Primary symbol: {{ primary_symbol }}
+Benchmark: {{ benchmark_symbol }}
+Evidence bundle: {{ evidence_bundle_json }}
+Historical analogs: {{ analogs_json }}
+Related symbols: {{ related_symbols_json }}
+
+Return JSON:
+{
+  "brief_kind": "symbol_context|sector_context|theme_context|candidate_snapshot|promotion_memo|historical_context",
+  "current_thesis": "...",
+  "bull_points": [{"code": "...", "weight": 0.0, "evidence_refs": ["..."]}],
+  "bear_points": [{"code": "...", "weight": 0.0, "evidence_refs": ["..."]}],
+  "related_symbols": [{"symbol": "...", "relation_type": "...", "importance": 0.0}],
+  "historical_analogs": [{"case_ref": "...", "similarity": 0.0}],
+  "unresolved_questions": ["..."],
+  "recommended_next_actions": ["..."]
+}

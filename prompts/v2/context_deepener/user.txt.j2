@@ -1,0 +1,26 @@
+Plan a bounded context-deepening job.
+
+Primary symbol: {{ primary_symbol }}
+Market: {{ market_code }}
+Benchmark: {{ benchmark_symbol }}
+Current event summary: {{ event_summary }}
+Current forecast summary: {{ forecast_summary }}
+Open questions: {{ open_questions }}
+Known evidence bundle: {{ evidence_bundle_json }}
+
+Return JSON:
+{
+  "job_kind": "context_deepen",
+  "recommended_queries": [
+    {
+      "query_kind": "peer_scan",
+      "query_text": "...",
+      "why": "...",
+      "priority": 0.0,
+      "max_docs": 10
+    }
+  ],
+  "missing_context": ["..."],
+  "next_best_evidence": ["..."],
+  "refresh_urgency": "low|medium|high"
+}

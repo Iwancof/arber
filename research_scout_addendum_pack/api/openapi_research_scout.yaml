@@ -1,0 +1,238 @@
+openapi: 3.1.0
+info:
+  title: Event Intelligence OS Research Scout API
+  version: 1.0.0
+  description: API extension for autonomous news exploration, historical context building, and universe discovery.
+servers:
+  - url: https://event-os.local
+paths:
+  /v1/research/cases:
+    get:
+      summary: List research cases
+      parameters:
+        - in: query
+          name: market_code
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: primary_symbol
+          schema: { type: string }
+      responses:
+        '200':
+          description: Case list
+    post:
+      summary: Create a research case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResearchCaseRequest'
+      responses:
+        '201':
+          description: Created
+  /v1/research/cases/{case_id}:
+    get:
+      summary: Get research case detail
+      parameters:
+        - in: path
+          name: case_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Case detail
+  /v1/research/cases/{case_id}/refresh:
+    post:
+      summary: Enqueue a refresh/deepening job for a case
+      parameters:
+        - in: path
+          name: case_id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202':
+          description: Refresh job accepted
+  /v1/research/jobs:
+    get:
+      summary: List research jobs
+      responses:
+        '200':
+          description: Job list
+    post:
+      summary: Create a research job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResearchJobRequest'
+      responses:
+        '202':
+          description: Accepted
+  /v1/research/symbols/{symbol}/dossier:
+    get:
+      summary: Get latest dossier snapshot for a symbol
+      parameters:
+        - in: path
+          name: symbol
+          required: true
+          schema: { type: string }
+        - in: query
+          name: market_code
+          schema: { type: string }
+      responses:
+        '200':
+          description: Dossier snapshot
+  /v1/research/candidates:
+    get:
+      summary: List candidate symbols
+      parameters:
+        - in: query
+          name: market_code
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string }
+      responses:
+        '200':
+          description: Candidate list
+  /v1/research/candidates/{candidate_id}/promote:
+    post:
+      summary: Promote candidate symbol
+      parameters:
+        - in: path
+          name: candidate_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteCandidateRequest'
+      responses:
+        '200':
+          description: Candidate promoted
+  /v1/research/candidates/{candidate_id}/reject:
+    post:
+      summary: Reject candidate symbol
+      parameters:
+        - in: path
+          name: candidate_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Candidate rejected
+  /v1/research/candidates/{candidate_id}/snooze:
+    post:
+      summary: Snooze candidate symbol review
+      parameters:
+        - in: path
+          name: candidate_id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                until:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Candidate snoozed
+  /v1/research/analogs:
+    get:
+      summary: Search historical analogs
+      parameters:
+        - in: query
+          name: symbol
+          schema: { type: string }
+        - in: query
+          name: event_type
+          schema: { type: string }
+        - in: query
+          name: verdict
+          schema: { type: string }
+      responses:
+        '200':
+          description: Analog list
+components:
+  schemas:
+    CreateResearchCaseRequest:
+      type: object
+      required: [case_type, market_code, title]
+      properties:
+        case_type:
+          type: string
+        market_code:
+          type: string
+        primary_symbol:
+          type: string
+        benchmark_symbol:
+          type: string
+        title:
+          type: string
+        trigger_reason:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: object
+            required: [scope_type, scope_key, scope_role]
+            properties:
+              scope_type: { type: string }
+              scope_key: { type: string }
+              scope_role: { type: string }
+              metadata_json: { type: object }
+    CreateResearchJobRequest:
+      type: object
+      required: [job_type, trigger_type, budget_class]
+      properties:
+        case_id:
+          type: string
+          format: uuid
+        job_type:
+          type: string
+        trigger_type:
+          type: string
+        budget_class:
+          type: string
+        worker_adapter:
+          type: string
+        prompt_version:
+          type: string
+        query_plans:
+          type: array
+          items:
+            type: object
+            properties:
+              query_kind: { type: string }
+              query_text: { type: string }
+              max_docs: { type: integer }
+              source_filter_json: { type: object }
+    PromoteCandidateRequest:
+      type: object
+      required: [promotion_level]
+      properties:
+        promotion_level:
+          type: string
+          enum: [observe_only, watchlist_add, inquiry_eligible, policy_eligible]
+        note:
+          type: string
