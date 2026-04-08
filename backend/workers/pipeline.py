@@ -434,7 +434,7 @@ class PipelineWorker:
                         "jpx_disclosure",
                     ]
                 )
-            )
+            ).limit(1)
         )
         return result.scalar_one_or_none()
 
