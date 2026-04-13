@@ -31,6 +31,12 @@ def get_worker_adapter() -> WorkerAdapter:
         )
         return CodexWorkerAdapter()
 
+    if provider == "claude_code":
+        from backend.adapters.worker.claude_code_worker import (
+            ClaudeCodeWorkerAdapter,
+        )
+        return ClaudeCodeWorkerAdapter()
+
     if provider == "mock":
         from backend.adapters.worker.mock_worker import (
             MockWorkerAdapter,
