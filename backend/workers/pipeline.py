@@ -195,7 +195,12 @@ class PipelineWorker:
                             "native_doc_id"
                         ),
                     )
-                    docs.append(doc)
+                    # Only process new docs (not dedup hits)
+                    age = (
+                        datetime.now(UTC) - doc.ingested_at
+                    ).total_seconds()
+                    if age < 300:  # < 5 min = new
+                        docs.append(doc)
                     stats["ingested"] += 1
                 except Exception:
                     logger.exception(
