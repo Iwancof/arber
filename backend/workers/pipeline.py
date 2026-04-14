@@ -114,8 +114,8 @@ class PipelineWorker:
                 articles = await self._news.fetch(
                     symbols=self._symbols,
                     start=datetime.now(UTC)
-                    - timedelta(hours=1),
-                    limit=20,
+                    - timedelta(hours=4),
+                    limit=30,
                 )
                 stats["fetched"] = len(articles)
                 logger.info(
