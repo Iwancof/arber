@@ -195,11 +195,14 @@ class PipelineWorker:
                             "native_doc_id"
                         ),
                     )
-                    # Only process new docs (not dedup hits)
-                    age = (
-                        datetime.now(UTC) - doc.ingested_at
-                    ).total_seconds()
-                    if age < 300:  # < 5 min = new
+                    # Only process docs not yet extracted
+                    has_event = await db.execute(
+                        select(EventLedger.event_id).where(
+                            EventLedger.raw_document_id
+                            == doc.raw_document_id
+                        ).limit(1)
+                    )
+                    if not has_event.scalar_one_or_none():
                         docs.append(doc)
                     stats["ingested"] += 1
                 except Exception:
